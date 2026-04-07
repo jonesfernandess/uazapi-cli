@@ -10,9 +10,10 @@ UAZAPI exposes a powerful REST API with 128+ endpoints for WhatsApp automation. 
 
 **uazapi-cli** wraps the entire UAZAPI surface into a single binary with:
 
-- An **interactive menu** for quick operations (test connection, send a message, configure tokens)
+- An **interactive menu** for quick operations (test connection, send a message, list instances)
 - A **full CLI** with subcommands for scripting and automation (`uazapi send text --to 5511... --message "hello"`)
 - A **setup wizard** that configures your instance URL and token once
+- **Self-update** built in — run `uazapi update` anytime
 
 No more copy-pasting tokens into headers or looking up endpoint docs for every request.
 
@@ -20,61 +21,64 @@ No more copy-pasting tokens into headers or looking up endpoint docs for every r
 
 ## Install
 
-One-liner:
+One command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/install.sh | bash
 ```
 
-Or manually:
+This checks for Node.js 18+ and npm, clones the repo to `~/.uazapi-cli-app`, builds it, and installs the `uazapi` command globally.
 
-```bash
-git clone https://github.com/jonesfernandess/uazapi-cli.git ~/.uazapi-cli-app
-cd ~/.uazapi-cli-app
-npm install && npm run build && npm install -g .
-```
-
-After installing, `uazapi` is available anywhere in your terminal.
-
-### Update
-
-```bash
-uazapi update
-# or
-uazapi upgrade
-```
+**Requirements:** Node.js 18+, npm, git.
 
 ## Quick start
 
 ```bash
-# First run — opens interactive menu with setup wizard
-uazapi
+# 1. Install
+curl -fsSL https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/install.sh | bash
 
-# Or configure directly
+# 2. Configure — opens the setup wizard
 uazapi setup
 
-# Test your connection
+# 3. Test your connection
 uazapi instance status
 
-# Send a message
-uazapi send text --to 5511999999999 --message "Hello from the terminal"
+# 4. Send your first message
+uazapi send text --to 5511999999999 --message "Hello from the terminal!"
 ```
+
+Or just run `uazapi` with no arguments to open the interactive menu.
+
+## Update
+
+Update to the latest version at any time:
+
+```bash
+uazapi update
+```
+
+`uazapi upgrade` also works. This pulls the latest code from GitHub, reinstalls dependencies, and rebuilds automatically.
 
 ## Usage
 
-Running `uazapi` with no arguments opens the interactive menu:
+### Interactive mode
+
+Run `uazapi` with no arguments:
 
 ```
   UAZAPI CLI — WhatsApp API from the terminal
 
   ● What do you want to do?
-  ● ⚡ Test connection
-  ○ ✉  Send message
+  ● ⚡ Test connection     (verifica status da instancia)
+  ○ ☰  List instances      (todas as instancias da API)
+  ○ ✉  Send message        (envio rapido de texto)
   ○ ⚙  Setup wizard
   ○ ✕  Exit
 ```
 
-For scripting and automation, use the full CLI:
+### CLI mode
+
+For scripting and automation:
 
 ```
 uazapi [command] [subcommand] [options]
@@ -98,7 +102,7 @@ uazapi [command] [subcommand] [options]
 | `label` | Manage labels |
 | `profile` | Manage WhatsApp profile |
 | `setup` | Interactive setup wizard |
-| `menu` | Open interactive menu |
+| `update` | Update to latest version |
 
 ### Examples
 
@@ -145,14 +149,25 @@ On first run, the setup wizard creates `~/.uazapi-cli/config.json`:
 |-------|-------------|
 | `baseUrl` | Your UAZAPI instance URL |
 | `token` | Instance authentication token |
-| `adminToken` | Admin token (optional, for instance management) |
+| `adminToken` | Admin token (optional, for listing instances and admin operations) |
 
-## Development
+You can reconfigure anytime with `uazapi setup` or change individual values from the interactive menu.
+
+## Build from source
 
 ```bash
+git clone https://github.com/jonesfernandess/uazapi-cli.git
+cd uazapi-cli
 npm install
-npm run dev      # Run with tsx (no build needed)
-npm run build    # Compile TypeScript
+npm run build
+npm install -g .
+```
+
+### Development
+
+```bash
+npm run dev      # Run with tsx (no build step)
+npm run build    # Compile TypeScript to dist/
 npm run lint     # Type-check without emitting
 ```
 
