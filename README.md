@@ -1,159 +1,161 @@
 # uazapi-cli
 
-> **Disclaimer:** This is an **unofficial**, community-built CLI tool. It is **not affiliated with, endorsed by, or associated with UAZAPI** in any way. Use at your own risk.
+> **Aviso:** Esta e uma ferramenta **nao oficial**, criada pela comunidade. **Nao possui nenhum vinculo, endosso ou associacao com a UAZAPI.** Use por sua conta e risco.
 
-A command-line interface for the [UAZAPI](https://uazapi.com) WhatsApp API. Manage your WhatsApp instance, send messages, handle groups, contacts, webhooks and more — all from the terminal.
+**[English](README.en.md) | [Espanol](README.es.md)**
 
-## The problem
+Uma interface de linha de comando para a API de WhatsApp da [UAZAPI](https://uazapi.com). Gerencie sua instancia, envie mensagens, administre grupos, contatos, webhooks e muito mais — tudo pelo terminal.
 
-UAZAPI exposes a powerful REST API with 128+ endpoints for WhatsApp automation. But interacting with it means juggling `curl` commands, remembering endpoint paths, building JSON payloads, and managing authentication headers manually.
+## O problema
 
-**uazapi-cli** wraps the entire UAZAPI surface into a single binary with:
+A UAZAPI expoe uma API REST poderosa com mais de 128 endpoints para automacao de WhatsApp. Mas interagir com ela significa ficar lidando com comandos `curl`, lembrando paths de endpoints, montando payloads JSON e gerenciando headers de autenticacao manualmente.
 
-- An **interactive menu** for quick operations (test connection, send a message, list instances)
-- A **full CLI** with subcommands for scripting and automation (`uazapi send text --to 5511... --message "hello"`)
-- A **setup wizard** that configures your instance URL and token once
-- **Self-update** built in — run `uazapi update` anytime
+**uazapi-cli** encapsula toda a superficie da UAZAPI em um unico binario com:
 
-No more copy-pasting tokens into headers or looking up endpoint docs for every request.
+- Um **menu interativo** para operacoes rapidas (testar conexao, enviar mensagem, listar instancias)
+- Uma **CLI completa** com subcomandos para scripts e automacao (`uazapi send text --to 5511... --message "ola"`)
+- Um **wizard de configuracao** que salva a URL e o token da instancia uma unica vez
+- **Auto-atualizacao** embutida — rode `uazapi update` a qualquer momento
 
-![uazapi-cli interactive menu](screenshot.jpeg)
+Chega de copiar e colar tokens em headers ou consultar a documentacao a cada request.
 
-## Install
+![uazapi-cli menu interativo](screenshot.jpeg)
 
-One command:
+## Instalacao
+
+Um comando:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/install.sh | bash
 ```
 
-This checks for Node.js 18+ and npm, clones the repo to `~/.uazapi-cli-app`, builds it, and installs the `uazapi` command globally.
+O script verifica Node.js 18+ e npm, clona o repositorio em `~/.uazapi-cli-app`, compila e instala o comando `uazapi` globalmente.
 
-**Requirements:** Node.js 18+, npm, git.
+**Requisitos:** Node.js 18+, npm, git.
 
-## Quick start
+## Inicio rapido
 
 ```bash
-# 1. Install
+# 1. Instalar
 curl -fsSL https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/install.sh | bash
 
-# 2. Configure — opens the setup wizard
+# 2. Configurar — abre o wizard de setup
 uazapi setup
 
-# 3. Test your connection
+# 3. Testar a conexao
 uazapi instance status
 
-# 4. Send your first message
-uazapi send text --to 5511999999999 --message "Hello from the terminal!"
+# 4. Enviar sua primeira mensagem
+uazapi send text --to 5511999999999 --message "Ola do terminal!"
 ```
 
-Or just run `uazapi` with no arguments to open the interactive menu.
+Ou rode `uazapi` sem argumentos para abrir o menu interativo.
 
-## Update
+## Atualizacao
 
-Update to the latest version at any time:
+Atualize para a versao mais recente a qualquer momento:
 
 ```bash
 uazapi update
 ```
 
-`uazapi upgrade` also works. This pulls the latest code from GitHub, reinstalls dependencies, and rebuilds automatically.
+`uazapi upgrade` tambem funciona. O comando puxa o codigo mais recente do GitHub, reinstala dependencias e recompila automaticamente.
 
-## Usage
+## Uso
 
-### Interactive mode
+### Modo interativo
 
-Run `uazapi` with no arguments:
+Rode `uazapi` sem argumentos:
 
 ```
   UAZAPI CLI — WhatsApp API from the terminal
 
-  ● What do you want to do?
-  ● ⚡ Test connection     (verifica status da instancia)
-  ○ ☰  List instances      (todas as instancias da API)
-  ○ ✉  Send message        (envio rapido de texto)
+  ● O que deseja fazer?
+  ● ⚡ Testar conexao      (verifica status da instancia)
+  ○ ☰  Listar instancias   (todas as instancias da API)
+  ○ ✉  Enviar mensagem     (envio rapido de texto)
   ○ ⚙  Setup wizard
-  ○ ✕  Exit
+  ○ ✕  Sair
 ```
 
-### CLI mode
+### Modo CLI
 
-For scripting and automation:
+Para scripts e automacao:
 
 ```
-uazapi [command] [subcommand] [options]
+uazapi [comando] [subcomando] [opcoes]
 ```
 
-### Commands
+### Comandos
 
-| Command | Description |
-|---------|-------------|
-| `instance` | Manage WhatsApp instance (connect, disconnect, status, reset) |
-| `send` | Send messages (text, media, location, contact, carousel, poll, PIX button) |
-| `message` | Manage messages (find, delete, download, edit, react) |
-| `chat` | Manage chats (find, archive, block, delete, mute, pin) |
-| `group` | Manage WhatsApp groups |
-| `contact` | Manage contacts |
-| `webhook` | Manage webhooks |
-| `newsletter` | Manage WhatsApp Channels/Newsletters |
-| `business` | Business profile and catalog |
-| `sender` | Mass messaging |
-| `admin` | Admin operations (requires admin token) |
-| `label` | Manage labels |
-| `profile` | Manage WhatsApp profile |
-| `setup` | Interactive setup wizard |
-| `update` | Update to latest version |
+| Comando | Descricao |
+|---------|-----------|
+| `instance` | Gerenciar instancia WhatsApp (conectar, desconectar, status, reset) |
+| `send` | Enviar mensagens (texto, midia, localizacao, contato, carrossel, enquete, botao PIX) |
+| `message` | Gerenciar mensagens (buscar, deletar, baixar, editar, reagir) |
+| `chat` | Gerenciar conversas (buscar, arquivar, bloquear, deletar, silenciar, fixar) |
+| `group` | Gerenciar grupos do WhatsApp |
+| `contact` | Gerenciar contatos |
+| `webhook` | Gerenciar webhooks |
+| `newsletter` | Gerenciar Canais/Newsletters do WhatsApp |
+| `business` | Perfil comercial e catalogo |
+| `sender` | Envio em massa |
+| `admin` | Operacoes administrativas (requer token admin) |
+| `label` | Gerenciar etiquetas |
+| `profile` | Gerenciar perfil do WhatsApp |
+| `setup` | Wizard de configuracao |
+| `update` | Atualizar para a versao mais recente |
 
-### Examples
+### Exemplos
 
 ```bash
-# Check instance status
+# Verificar status da instancia
 uazapi instance status
 
-# Send a text message
-uazapi send text --to 5511999999999 --message "Hello!"
+# Enviar mensagem de texto
+uazapi send text --to 5511999999999 --message "Ola!"
 
-# Send an image
-uazapi send media --to 5511999999999 --type image --file https://example.com/photo.jpg
+# Enviar imagem
+uazapi send media --to 5511999999999 --type image --file https://exemplo.com/foto.jpg
 
-# Send a PIX payment button
-uazapi send pix-button --to 5511999999999 --key "your-pix-key" --amount 49.90
+# Enviar botao de pagamento PIX
+uazapi send pix-button --to 5511999999999 --key "sua-chave-pix" --amount 49.90
 
-# Post a WhatsApp Story
-uazapi send status --type text --message "New update!"
+# Postar um Story no WhatsApp
+uazapi send status --type text --message "Novidade!"
 
-# Manage webhooks
-uazapi webhook set --url https://your-server.com/webhook
+# Configurar webhook
+uazapi webhook set --url https://seu-servidor.com/webhook
 
-# List all groups
+# Listar todos os grupos
 uazapi group list
 
-# Get help for any command
+# Ajuda de qualquer comando
 uazapi send --help
 uazapi instance connect --help
 ```
 
-## Configuration
+## Configuracao
 
-On first run, the setup wizard creates `~/.uazapi-cli/config.json`:
+Na primeira execucao, o wizard cria `~/.uazapi-cli/config.json`:
 
 ```json
 {
-  "baseUrl": "https://your-instance.uazapi.com",
-  "token": "your-instance-token",
+  "baseUrl": "https://sua-instancia.uazapi.com",
+  "token": "seu-token-de-instancia",
   "adminToken": ""
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `baseUrl` | Your UAZAPI instance URL |
-| `token` | Instance authentication token |
-| `adminToken` | Admin token (optional, for listing instances and admin operations) |
+| Campo | Descricao |
+|-------|-----------|
+| `baseUrl` | URL da sua instancia UAZAPI |
+| `token` | Token de autenticacao da instancia |
+| `adminToken` | Token admin (opcional, para listar instancias e operacoes admin) |
 
-You can reconfigure anytime with `uazapi setup` or change individual values from the interactive menu.
+Voce pode reconfigurar a qualquer momento com `uazapi setup` ou alterar valores individuais pelo menu interativo.
 
-## Build from source
+## Build local
 
 ```bash
 git clone https://github.com/jonesfernandess/uazapi-cli.git
@@ -163,20 +165,20 @@ npm run build
 npm install -g .
 ```
 
-### Development
+### Desenvolvimento
 
 ```bash
-npm run dev      # Run with tsx (no build step)
-npm run build    # Compile TypeScript to dist/
-npm run lint     # Type-check without emitting
+npm run dev      # Rodar com tsx (sem build)
+npm run build    # Compilar TypeScript para dist/
+npm run lint     # Verificar tipos sem emitir arquivos
 ```
 
-## Tech stack
+## Stack
 
-- **TypeScript** + **Commander.js** for the CLI framework
-- **@clack/prompts** for the interactive menu
-- **chalk** + **gradient-string** + **figlet** for terminal styling
+- **TypeScript** + **Commander.js** para o framework CLI
+- **@clack/prompts** para o menu interativo
+- **chalk** + **gradient-string** + **figlet** para estilizacao no terminal
 
-## License
+## Licenca
 
 MIT
