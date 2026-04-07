@@ -16,6 +16,8 @@ UAZAPI exposes a powerful REST API with 128+ endpoints for WhatsApp automation. 
 
 No more copy-pasting tokens into headers or looking up endpoint docs for every request.
 
+![uazapi-cli interactive menu](screenshot.jpeg)
+
 ## Install
 
 ```bash
