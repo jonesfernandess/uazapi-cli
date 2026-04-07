@@ -343,6 +343,62 @@ async function handleQuickSend(config: UazapiConfig): Promise<void> {
   return mainMenu();
 }
 
+async function handleListInstances(config: UazapiConfig): Promise<void> {
+  if (!config.baseUrl) {
+    p.log.error("Configure a URL primeiro.");
+    return mainMenu();
+  }
+
+  const token = config.adminToken || config.token;
+  if (!token) {
+    p.log.error("Configure o token admin ou token da instancia primeiro.");
+    return mainMenu();
+  }
+
+  const s = p.spinner();
+  s.start("Buscando instancias...");
+
+  try {
+    const resp = await fetch(`${config.baseUrl}/instance/all`, {
+      headers: { token, Accept: "application/json" },
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      s.stop(chalk.red("Erro ao listar"));
+      p.log.error(`HTTP ${resp.status}: ${JSON.stringify(data)}`);
+      return mainMenu();
+    }
+
+    const instances = Array.isArray(data) ? data : (data as Record<string, unknown>)["instances"] as unknown[] || [data];
+    s.stop(chalk.green(`${instances.length} instancia(s) encontrada(s)`));
+
+    console.log("");
+    for (const inst of instances) {
+      const i = inst as Record<string, unknown>;
+      const statusInfo = (i["status"] as Record<string, unknown>) || {};
+      const connected = statusInfo["connected"] === true;
+      const statusIcon = connected ? chalk.green("●") : chalk.red("●");
+      const statusText = connected ? chalk.green("connected") : chalk.red("disconnected");
+
+      const name = (i["name"] as string) || (i["profileName"] as string) || "—";
+      const id = (i["id"] as string) || "";
+      const owner = (i["owner"] as string) || "";
+      const tokenStr = (i["token"] as string) || "";
+      const tokenDisplay = tokenStr ? tokenStr.slice(0, 8) + "..." + tokenStr.slice(-4) : "—";
+
+      console.log(`  ${statusIcon} ${chalk.bold.white(name)} ${dim(`(${id})`)}`);
+      console.log(`    ${dim("Status:")} ${statusText}  ${dim("Numero:")} ${owner || "—"}  ${dim("Token:")} ${chalk.blue(tokenDisplay)}`);
+      console.log("");
+    }
+  } catch (err) {
+    s.stop(chalk.red("Falha na requisicao"));
+    p.log.error(String(err));
+  }
+
+  return mainMenu();
+}
+
 // ── Main Menu ──
 
 async function mainMenu(): Promise<void> {
@@ -359,6 +415,7 @@ async function mainMenu(): Promise<void> {
   if (isConfigured) {
     options.push(
       { value: "test", label: `${chalk.green("⚡")} Testar conexao`, hint: "verifica status da instancia" },
+      { value: "instances", label: `${chalk.cyan("☰")} Listar instancias`, hint: "todas as instancias da API" },
       { value: "send", label: `${chalk.green("✉")} Enviar mensagem`, hint: "envio rapido de texto" },
     );
   }
@@ -384,6 +441,8 @@ async function mainMenu(): Promise<void> {
   switch (action) {
     case "test":
       return handleTestConnection(config);
+    case "instances":
+      return handleListInstances(config);
     case "send":
       return handleQuickSend(config);
     case "setup":
