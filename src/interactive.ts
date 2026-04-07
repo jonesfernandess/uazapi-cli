@@ -620,7 +620,37 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
   });
   if (p.isCancel(campaignName)) return handleBulkSend(config);
 
+  const delayChoice = await p.select({
+    message: "Delay entre mensagens",
+    options: [
+      { value: 0, label: "Sem delay", hint: "envia o mais rapido possivel" },
+      { value: 1000, label: "1 segundo" },
+      { value: 3000, label: "3 segundos" },
+      { value: 5000, label: "5 segundos" },
+      { value: 10000, label: "10 segundos" },
+      { value: -1, label: "Personalizado", hint: "definir em milissegundos" },
+    ],
+  });
+  if (p.isCancel(delayChoice)) return handleBulkSend(config);
+
+  let delay = delayChoice as number;
+  if (delay === -1) {
+    const customDelay = await p.text({
+      message: "Delay em milissegundos",
+      placeholder: "2000",
+      validate: (v) => {
+        if (!v?.trim()) return "Valor obrigatorio";
+        const n = parseInt(v.trim(), 10);
+        if (isNaN(n) || n < 0) return "Deve ser um numero >= 0";
+        return undefined;
+      },
+    });
+    if (p.isCancel(customDelay)) return handleBulkSend(config);
+    delay = parseInt((customDelay as string).trim(), 10);
+  }
+
   // Confirmation
+  const delayLabel = delay === 0 ? "nenhum" : `${delay}ms (${(delay / 1000).toFixed(1)}s)`;
   console.log("");
   console.log(dim("  ─────────────────────────────────────────────────────"));
   console.log(`  ${chalk.bold.white("Resumo do envio em massa")}`);
@@ -628,6 +658,13 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
   console.log(`  ${dim("Mensagem:")} ${chalk.white((text as string).slice(0, 80))}${(text as string).length > 80 ? "..." : ""}`);
   if ((campaignName as string)?.trim()) {
     console.log(`  ${dim("Campanha:")} ${chalk.white(campaignName as string)}`);
+  }
+  console.log(`  ${dim("Delay:")} ${chalk.white(delayLabel)}`);
+  if (delay > 0 && numbers.length > 1) {
+    const totalSec = ((numbers.length - 1) * delay) / 1000;
+    const totalMin = totalSec / 60;
+    const estimate = totalMin >= 1 ? `~${totalMin.toFixed(1)} min` : `~${totalSec.toFixed(0)}s`;
+    console.log(`  ${dim("Tempo estimado:")} ${chalk.white(estimate)}`);
   }
   console.log(dim("  ─────────────────────────────────────────────────────"));
   console.log("");
@@ -651,6 +688,9 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
     };
     if ((campaignName as string)?.trim()) {
       body.name = (campaignName as string).trim();
+    }
+    if (delay > 0) {
+      body.delay = delay;
     }
 
     const resp = await fetch(`${config.baseUrl}/sender/simple`, {
