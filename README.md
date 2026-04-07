@@ -20,16 +20,29 @@ No more copy-pasting tokens into headers or looking up endpoint docs for every r
 
 ## Install
 
+One-liner:
+
 ```bash
-# Clone and install globally
-git clone https://github.com/jonesfernandess/uazapi-cli.git
-cd uazapi-cli
-npm install
-npm run build
-npm link
+curl -fsSL https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/install.sh | bash
 ```
 
-After linking, `uazapi` is available anywhere in your terminal.
+Or manually:
+
+```bash
+git clone https://github.com/jonesfernandess/uazapi-cli.git ~/.uazapi-cli-app
+cd ~/.uazapi-cli-app
+npm install && npm run build && npm install -g .
+```
+
+After installing, `uazapi` is available anywhere in your terminal.
+
+### Update
+
+```bash
+uazapi update
+# or
+uazapi upgrade
+```
 
 ## Quick start
 
