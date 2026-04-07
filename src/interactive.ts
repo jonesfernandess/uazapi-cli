@@ -2,8 +2,8 @@ import * as p from "@clack/prompts";
 import chalk from "chalk";
 import figlet from "figlet";
 import gradient from "gradient-string";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
+import { join, extname } from "path";
 import { homedir } from "os";
 
 // ── Config ──
@@ -399,6 +399,289 @@ async function handleListInstances(config: UazapiConfig): Promise<void> {
   return mainMenu();
 }
 
+// ── Bulk Send ──
+
+function parseNumbersFromText(raw: string): string[] {
+  return raw
+    .split(/[\n,;]+/)
+    .map((n) => n.trim().replace(/\D/g, ""))
+    .filter((n) => n.length >= 10 && n.length <= 15);
+}
+
+function parseNumbersFromCsv(content: string): string[] {
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
+  const numbers: string[] = [];
+  for (const line of lines) {
+    const cols = line.split(/[,;\t]+/);
+    for (const col of cols) {
+      const clean = col.trim().replace(/^["']|["']$/g, "").replace(/\D/g, "");
+      if (clean.length >= 10 && clean.length <= 15) {
+        numbers.push(clean);
+      }
+    }
+  }
+  return numbers;
+}
+
+async function handleBulkSend(config: UazapiConfig): Promise<void> {
+  if (!config.baseUrl || !config.token) {
+    p.log.error("Configure a URL e o token primeiro.");
+    return mainMenu();
+  }
+
+  const action = await p.select({
+    message: "Envio em massa",
+    options: [
+      { value: "new", label: `${chalk.green("+")} Nova campanha`, hint: "criar envio em massa" },
+      { value: "list", label: `${chalk.cyan("☰")} Listar pastas`, hint: "ver campanhas existentes" },
+      { value: "clear-done", label: `${chalk.yellow("✓")} Limpar finalizados`, hint: "remover jobs completos" },
+      { value: "back", label: `${chalk.red("←")} Voltar` },
+    ],
+  });
+
+  if (p.isCancel(action) || action === "back") return mainMenu();
+
+  if (action === "list") {
+    const s = p.spinner();
+    s.start("Buscando pastas...");
+    try {
+      const resp = await fetch(`${config.baseUrl}/sender/listfolders`, {
+        headers: { token: config.token, Accept: "application/json" },
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        s.stop(chalk.green("Pastas carregadas"));
+        const folders = Array.isArray(data) ? data : [];
+        if (folders.length === 0) {
+          p.log.info("Nenhuma pasta encontrada.");
+        } else {
+          for (const f of folders) {
+            const folder = f as Record<string, unknown>;
+            const name = (folder["name"] as string) || "Sem nome";
+            const id = (folder["id"] as string) || (folder["_id"] as string) || "";
+            const status = (folder["status"] as string) || "";
+            const statusIcon = status === "done" ? chalk.green("✓") : status === "sending" ? chalk.yellow("⟳") : chalk.dim("●");
+            console.log(`  ${statusIcon} ${chalk.bold.white(name)} ${dim(id ? `(${id})` : "")}`);
+            if (status) console.log(`    ${dim("Status:")} ${status}`);
+            console.log("");
+          }
+        }
+      } else {
+        s.stop(chalk.red("Erro"));
+        p.log.error(JSON.stringify(data));
+      }
+    } catch (err) {
+      s.stop(chalk.red("Falha"));
+      p.log.error(String(err));
+    }
+    return handleBulkSend(config);
+  }
+
+  if (action === "clear-done") {
+    const s = p.spinner();
+    s.start("Limpando jobs finalizados...");
+    try {
+      const resp = await fetch(`${config.baseUrl}/sender/cleardone`, {
+        method: "POST",
+        headers: { token: config.token, Accept: "application/json" },
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        s.stop(chalk.green("Jobs finalizados removidos!"));
+      } else {
+        s.stop(chalk.red("Erro"));
+        p.log.error(JSON.stringify(data));
+      }
+    } catch (err) {
+      s.stop(chalk.red("Falha"));
+      p.log.error(String(err));
+    }
+    return handleBulkSend(config);
+  }
+
+  // ── Nova campanha ──
+
+  const inputMethod = await p.select({
+    message: "Como deseja informar os numeros?",
+    options: [
+      { value: "type", label: "Digitar numeros", hint: "separados por virgula ou um por linha" },
+      { value: "file", label: "Importar de arquivo", hint: "CSV ou TXT" },
+    ],
+  });
+  if (p.isCancel(inputMethod)) return handleBulkSend(config);
+
+  let numbers: string[] = [];
+
+  if (inputMethod === "file") {
+    // List CSV/TXT files in home directory and current directory
+    const searchDirs = [homedir(), join(homedir(), "Desktop"), join(homedir(), "Downloads"), process.cwd()];
+    const files: Array<{ value: string; label: string }> = [];
+
+    for (const dir of searchDirs) {
+      try {
+        if (!existsSync(dir)) continue;
+        const entries = readdirSync(dir);
+        for (const entry of entries) {
+          const ext = extname(entry).toLowerCase();
+          if ([".csv", ".txt"].includes(ext)) {
+            const full = join(dir, entry);
+            const label = `${entry} ${dim(`(${dir})`)}`;
+            if (!files.some((f) => f.value === full)) {
+              files.push({ value: full, label });
+            }
+          }
+        }
+      } catch { /* skip inaccessible dirs */ }
+    }
+
+    if (files.length === 0) {
+      p.log.warn("Nenhum arquivo .csv ou .txt encontrado em ~/Desktop, ~/Downloads ou diretorio atual.");
+      const filePath = await p.text({
+        message: "Caminho completo do arquivo",
+        placeholder: "/caminho/para/numeros.csv",
+        validate: (v) => {
+          if (!v?.trim()) return "Caminho obrigatorio";
+          if (!existsSync(v.trim())) return "Arquivo nao encontrado";
+          return undefined;
+        },
+      });
+      if (p.isCancel(filePath)) return handleBulkSend(config);
+      const content = readFileSync((filePath as string).trim(), "utf-8");
+      numbers = parseNumbersFromCsv(content);
+    } else {
+      files.push({ value: "__custom__", label: "Digitar caminho manualmente..." });
+      const chosen = await p.select({
+        message: "Selecione o arquivo",
+        options: files,
+      });
+      if (p.isCancel(chosen)) return handleBulkSend(config);
+
+      let filePath = chosen as string;
+      if (filePath === "__custom__") {
+        const custom = await p.text({
+          message: "Caminho completo do arquivo",
+          placeholder: "/caminho/para/numeros.csv",
+          validate: (v) => {
+            if (!v?.trim()) return "Caminho obrigatorio";
+            if (!existsSync(v.trim())) return "Arquivo nao encontrado";
+            return undefined;
+          },
+        });
+        if (p.isCancel(custom)) return handleBulkSend(config);
+        filePath = (custom as string).trim();
+      }
+
+      const content = readFileSync(filePath, "utf-8");
+      numbers = parseNumbersFromCsv(content);
+    }
+  } else {
+    const raw = await p.text({
+      message: "Numeros (separados por virgula, ponto-e-virgula ou um por linha)",
+      placeholder: "5511999999999, 5511888888888",
+      validate: (v) => {
+        if (!v?.trim()) return "Informe pelo menos um numero";
+        const parsed = parseNumbersFromText(v);
+        if (parsed.length === 0) return "Nenhum numero valido encontrado (10-15 digitos)";
+        return undefined;
+      },
+    });
+    if (p.isCancel(raw)) return handleBulkSend(config);
+    numbers = parseNumbersFromText(raw as string);
+  }
+
+  // Deduplicate
+  numbers = [...new Set(numbers)];
+
+  if (numbers.length === 0) {
+    p.log.error("Nenhum numero valido encontrado.");
+    return handleBulkSend(config);
+  }
+
+  p.log.info(`${accent(String(numbers.length))} numero(s) valido(s) encontrado(s)`);
+  if (numbers.length <= 10) {
+    p.log.message(dim(numbers.join(", ")));
+  } else {
+    p.log.message(dim(`${numbers.slice(0, 5).join(", ")} ... e mais ${numbers.length - 5}`));
+  }
+
+  const text = await p.text({
+    message: "Mensagem para enviar",
+    placeholder: "Escreva a mensagem que sera enviada para todos...",
+    validate: (v) => {
+      if (!v?.trim()) return "Mensagem obrigatoria";
+      return undefined;
+    },
+  });
+  if (p.isCancel(text)) return handleBulkSend(config);
+
+  const campaignName = await p.text({
+    message: "Nome da campanha (opcional)",
+    placeholder: "Minha campanha",
+  });
+  if (p.isCancel(campaignName)) return handleBulkSend(config);
+
+  // Confirmation
+  console.log("");
+  console.log(dim("  ─────────────────────────────────────────────────────"));
+  console.log(`  ${chalk.bold.white("Resumo do envio em massa")}`);
+  console.log(`  ${dim("Destinatarios:")} ${accent(String(numbers.length))}`);
+  console.log(`  ${dim("Mensagem:")} ${chalk.white((text as string).slice(0, 80))}${(text as string).length > 80 ? "..." : ""}`);
+  if ((campaignName as string)?.trim()) {
+    console.log(`  ${dim("Campanha:")} ${chalk.white(campaignName as string)}`);
+  }
+  console.log(dim("  ─────────────────────────────────────────────────────"));
+  console.log("");
+
+  const confirm = await p.confirm({
+    message: `Enviar para ${numbers.length} numero(s)?`,
+    initialValue: false,
+  });
+  if (p.isCancel(confirm) || !confirm) {
+    p.log.info("Envio cancelado.");
+    return handleBulkSend(config);
+  }
+
+  const s = p.spinner();
+  s.start("Iniciando envio em massa...");
+
+  try {
+    const body: Record<string, unknown> = {
+      numbers,
+      message: { text: (text as string).trim() },
+    };
+    if ((campaignName as string)?.trim()) {
+      body.name = (campaignName as string).trim();
+    }
+
+    const resp = await fetch(`${config.baseUrl}/sender/simple`, {
+      method: "POST",
+      headers: {
+        token: config.token,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await resp.json() as Record<string, unknown>;
+
+    if (resp.ok) {
+      s.stop(chalk.green("Envio em massa iniciado!"));
+      const id = (data["id"] as string) || (data["_id"] as string) || "";
+      if (id) p.log.message(`${dim("Job ID:")} ${accent(id)}`);
+      p.log.success(`Campanha criada com ${numbers.length} destinatario(s).`);
+    } else {
+      s.stop(chalk.red("Erro ao iniciar envio"));
+      p.log.error(JSON.stringify(data));
+    }
+  } catch (err) {
+    s.stop(chalk.red("Falha no envio"));
+    p.log.error(String(err));
+  }
+
+  return handleBulkSend(config);
+}
+
 // ── Main Menu ──
 
 async function mainMenu(): Promise<void> {
@@ -417,6 +700,7 @@ async function mainMenu(): Promise<void> {
       { value: "test", label: `${chalk.green("⚡")} Testar conexao`, hint: "verifica status da instancia" },
       { value: "instances", label: `${chalk.cyan("☰")} Listar instancias`, hint: "todas as instancias da API" },
       { value: "send", label: `${chalk.green("✉")} Enviar mensagem`, hint: "envio rapido de texto" },
+      { value: "bulk-send", label: `${chalk.magenta("◆")} Envio em massa`, hint: "campanhas e sender" },
     );
   }
 
@@ -445,6 +729,8 @@ async function mainMenu(): Promise<void> {
       return handleListInstances(config);
     case "send":
       return handleQuickSend(config);
+    case "bulk-send":
+      return handleBulkSend(config);
     case "setup":
       return runSetupWizard(config);
     case "base-url":
