@@ -1,6 +1,6 @@
 # uazapi-cli
 
-> **Aviso:** Esta e uma ferramenta **nao oficial**, criada pela comunidade. **Nao possui nenhum vinculo, endosso ou associacao com a UAZAPI.** Use por sua conta e risco.
+> **Aviso:** Esta é uma ferramenta **não oficial**, criada por mim para facilitar minhas automações. **Não possui nenhum vínculo, endosso ou associação com a UAZAPI.**
 
 **[English](README.en.md) | [Espanol](README.es.md)**
 
@@ -8,9 +8,11 @@ Uma interface de linha de comando para a API de WhatsApp da [UAZAPI](https://uaz
 
 ## O problema
 
-A UAZAPI expoe uma API REST poderosa com mais de 128 endpoints para automacao de WhatsApp. Mas interagir com ela significa ficar lidando com comandos `curl`, lembrando paths de endpoints, montando payloads JSON e gerenciando headers de autenticacao manualmente.
+A UAZAPI expõe uma API REST poderosa com mais de 128 endpoints para automacao de WhatsApp. Mas interagir com ela significa ficar lidando com comandos `curl`, lembrando paths de endpoints, montando payloads JSON e gerenciando headers de autenticacao manualmente.
 
-**uazapi-cli** encapsula toda a superficie da UAZAPI em um unico binario com:
+Eles até tem um arquivo yaml com instruções que podem ser usadas para instruir a sua LLM quanto ao uso da API, porém eu construí algo que considero mais poderoso e prático de usar.
+
+**uazapi-cli** encapsula toda a superficie da UAZAPI em um único binario com:
 
 - Um **menu interativo** para operacoes rapidas (testar conexao, enviar mensagem, listar instancias)
 - Uma **CLI completa** com subcomandos para scripts e automacao (`uazapi send text --to 5511... --message "ola"`)
@@ -59,7 +61,7 @@ Atualize para a versao mais recente a qualquer momento:
 uazapi update
 ```
 
-`uazapi upgrade` tambem funciona. O comando puxa o codigo mais recente do GitHub, reinstala dependencias e recompila automaticamente.
+`uazapi upgrade` também funciona. O comando puxa o código mais recente do GitHub, reinstala dependências e recompila automaticamente.
 
 ## Uso
 
