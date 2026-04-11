@@ -124,4 +124,11 @@ export function registerInstanceCommands(program: Command): void {
     const client = new UazapiClient();
     printResponse(await client.delete("/instance/proxy"), "Remove Proxy");
   });
+
+  cmd.command("wa-limits")
+    .description("Check WhatsApp messaging limits (new_chat_message_capping, reachout_timelock, provider_code 463)")
+    .action(async () => {
+      const client = new UazapiClient();
+      printResponse(await client.get("/instance/wa_messages_limits"), "WA Message Limits");
+    });
 }

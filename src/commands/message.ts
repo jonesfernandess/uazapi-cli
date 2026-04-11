@@ -107,4 +107,13 @@ export function registerMessageCommands(program: Command): void {
     const client = new UazapiClient();
     printResponse(await client.delete("/message/async"), "Clear Queue");
   });
+
+  cmd.command("pin")
+    .description("Pin or unpin a message in a chat")
+    .requiredOption("--id <id>", "Message ID to pin/unpin")
+    .requiredOption("--duration <days>", "Pin duration in days: 1, 7 or 30 (use 0 to unpin)", parseInt)
+    .action(async (opts) => {
+      const client = new UazapiClient();
+      printResponse(await client.post("/message/pin", { id: opts.id, duration: opts.duration }), "Pin Message");
+    });
 }
