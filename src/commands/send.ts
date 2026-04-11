@@ -42,6 +42,7 @@ export function registerSendCommands(program: Command): void {
     .option("--reply-id <id>", "Message ID to reply to")
     .option("--delay <ms>", "Delay in ms", parseInt)
     .option("--async", "Send asynchronously")
+    .option("--view-once", "Send as view once — disappears after viewed (image, video, audio)")
     .action(async (opts) => {
       const client = new UazapiClient();
       const body = buildBody({
@@ -55,6 +56,7 @@ export function registerSendCommands(program: Command): void {
         replyid: opts.replyId,
         delay: opts.delay,
         async: opts.async,
+        viewOnce: opts.viewOnce,
       });
       printResponse(await client.post("/send/media", body), "Send Media");
     });

@@ -1,182 +1,250 @@
 ---
 name: uazapi
-description: Envia mensagens, gerencia instâncias, grupos, contatos e webhooks do WhatsApp via UAZAPI. Use para automação de WhatsApp com envio de texto, mídia, áudio, vídeo, localização, botões interativos, PIX, grupos e mais.
+description: Referência completa da API REST da UAZAPI. Use quando precisar chamar endpoints diretamente, entender autenticação, fluxo de setup, bodies de requisição, ou para construir agentes/integrações n8n e Python.
 ---
 
-# UAZAPI Skill
-
-Esta skill fornece instruções para usar a API da UAZAPI (https://uazapi.com) para automação de WhatsApp.
+# UAZAPI API Reference
 
 ## Autenticação
 
-- **Token de instância**: Header `token` com o token da sua instância
-- **Token admin**: Header `admintoken` para operações administrativas
-- **URL base**: `https://{subdomain}.uazapi.com` (subdomain: `free` ou `api`)
-
-## Endpoints Principais
-
-### Enviar Mensagens
-
-| Endpoint | Descrição | Corpo (JSON) |
-|----------|-----------|--------------|
-| `POST /send/text` | Enviar texto | `{"number": "5511999999999", "text": "Olá!"}` |
-| `POST /send/media` | Enviar mídia (imagem, vídeo, áudio, documento) | `{"number": "5511999999999", "type": "video", "file": "URL", "text": "legenda"}` |
-| `POST /send/contact` | Enviar contato vCard | `{"number": "5511999999999", "contact": "vCard string"}` |
-| `POST /send/location` | Enviar localização | `{"number": "5511999999999", "latitude": -23.55, "longitude": -46.63, "title": "Local"}` |
-| `POST /send/menu` | Menu interativo (botões/lista) | `{"number": "5511999999999", "title": "Título", "button": [...], "list": [...], "msg": "Texto"}` |
-| `POST /send/carousel` | Carrossel de mídia | `{"number": "5511999999999", "cards": [{"img": "url", "title": "t", "msg": "m", "buttons": [...]}]}` |
-| `POST /send/status` | Postar story/status | `{"type": "text\|image\|video\|audio", "text": "msg", "background_color": 1, "font": 0}` |
-| `POST /send/pix-button` | Botão de pagamento PIX | `{"number": "5511999999999", "key": "chave-pix", "amount": 49.90, "msg": "desc"}` |
-| `POST /send/location-button` | Solicitar localização | `{"number": "5511999999999"}` |
-| `POST /send/request-payment` | Solicitar pagamento | `{"number": "5511999999999", "amount": 100, "description": "desc"}` |
-
-### Tipos de Mídia (para `/send/media`)
-
-| type | Descrição |
-|------|------------|
-| `image` | Imagem (JPG preferencialmente) |
-| `video` | Vídeo (apenas MP4) |
-| `document` | Documento (PDF, DOCX, XLSX, etc) |
-| `audio` | Áudio (MP3 ou OGG) |
-| `ptt` | Mensagem de voz (Push-to-Talk) |
-| `myaudio` | Áudio alternativo |
-| `ptv` | Mensagem de vídeo |
-| `sticker` | Figurinha |
-
-### Parâmetros Comuns de Envio
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|------------|
-| `number` | string | Número com código país (ex: 5511999999999) |
-| `text` | string | Texto/caption da mensagem |
-| `delay` | integer | Atraso em ms antes do envio (mostra "Digitando...") |
-| `replyid` | string | ID da mensagem para responder |
-| `mentions` | string | Números para mencionar (separados por vírgula) |
-| `readchat` | boolean | Marcar conversa como lida |
-| `forward` | boolean | Marcar como encaminhadas |
-
-### Gerenciar Instância
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `POST /instance/create` | Criar instância | `{"name": "minha-instancia"}` |
-| `GET /instance/connect` | Obter QR code | Query: `name=instancia` |
-| `POST /instance/connect` | Conectar instância | `{"name": "instancia", "qrcode": "base64"}` |
-| `POST /instance/disconnect` | Desconectar | `{"name": "instancia"}` |
-| `GET /instance/status` | Ver status | Query: `name=instancia` |
-| `POST /instance/reset` | Resetar instância | `{"name": "instancia"}` |
-| `POST /instance/privacy` | Atualizar privacidade | `{"name": "instancia", "readreceipts": "all", "status": "all", ...}` |
-| `POST /instance/presence` | Atualizar presença | `{"name": "instancia", "presence": "available"}` |
-| `GET /instance/all` | Listar todas instâncias | - |
-
-### Mensagens
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `GET /message/find` | Buscar mensagens | Query: `name=instancia&search=termo` |
-| `POST /message/delete` | Deletar mensagem | `{"name": "instancia", "id": "messageId"}` |
-| `POST /message/react` | Reagir à mensagem | `{"name": "instancia", "id": "msgId", "reaction": "😊"}` |
-| `POST /message/edit` | Editar mensagem | `{"name": "instancia", "id": "msgId", "text": "novo texto"}` |
-| `POST /message/markread` | Marcar como lido | `{"name": "instancia", "id": "msgId"}` |
-| `GET /message/download` | Baixar mídia | Query: `id=messageId` |
-
-### Grupos
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `POST /group/create` | Criar grupo | `{"name": "Grupo", "participants": ["5511999999999"]}` |
-| `POST /group/join` | Entrar via invite code | `{"inviteCode": "código"}` |
-| `POST /group/leave` | Sair do grupo | `{"name": "instancia", "groupJid": "jid@g.us"}` |
-| `GET /group/list` | Listar grupos | Query: `name=instancia` |
-| `GET /group/info` | Info do grupo | Query: `name=instancia&groupJid=jid@g.us` |
-| `POST /group/updateParticipants` | Adicionar/remover membros | `{"name": "instancia", "groupJid": "jid@g.us", "action": "add\|remove", "participants": [...]}` |
-| `POST /group/updateName` | Renomear grupo | `{"name": "instancia", "groupJid": "jid@g.us", "subject": "Novo Nome"}` |
-| `POST /group/updateDescription` | Atualizar descrição | `{"name": "instancia", "groupJid": "jid@g.us", "description": "desc"}` |
-| `POST /group/updateImage` | Atualizar foto | `{"name": "instancia", "groupJid": "jid@g.us", "image": "url"}` |
-
-### Contatos
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `GET /contact/list` | Listar contatos | Query: `name=instancia` |
-| `GET /contact/info` | Info do contato | Query: `name=instancia&number=5511999999999` |
-| `POST /contact/update` | Atualizar contato | `{"name": "instancia", "number": "...", "pushname": "nome"}` |
-
-### Webhooks
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `GET /webhook/set` | Ver webhook | Query: `name=instancia` |
-| `POST /webhook/set` | Configurar webhook | `{"name": "instancia", "url": "https://...", "events": ["message", "presence"]}` |
-
-### Perfil
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `POST /profile/name` | Alterar nome | `{"name": "instancia", "pushname": "Novo Nome"}` |
-| `POST /profile/image` | Alterar foto | `{"name": "instancia", "image": "url"}` |
-| `GET /profile` | Ver perfil | Query: `name=instancia` |
-
-### Newsletter/Canais
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `GET /newsletter/list` | Listar canais | Query: `name=instancia` |
-| `GET /newsletter/info` | Info do canal | Query: `name=instancia&jid=id@newsletter` |
-| `POST /newsletter/follow` | Seguir canal | `{"name": "instancia", "jid": "id@newsletter"}` |
-| `POST /newsletter/unfollow` | Deixar canal | `{"name": "instancia", "jid": "id@newsletter"}` |
-| `POST /newsletter/send` | Enviar para canal | `{"name": "instancia", "jid": "id@newsletter", "message": {"type": "text", "content": "msg"}}` |
-
-### Chat
-
-| Endpoint | Descrição | Corpo |
-|----------|-----------|-------|
-| `GET /chat/list` | Listar conversas | Query: `name=instancia` |
-| `GET /chat/find` | Buscar chat | Query: `name=instancia&search=termo` |
-| `POST /chat/archive` | Arquivar chat | `{"name": "instancia", "id": "chatId", "archive": true}` |
-| `POST /chat/mute` | Silenciar chat | `{"name": "instancia", "id": "chatId", "mute": -1}` |
-| `POST /chat/pin` | Fixar chat | `{"name": "instancia", "id": "chatId", "pin": true}` |
-| `POST /chat/delete` | Deletar chat | `{"name": "instancia", "id": "chatId"}` |
-| `POST /chat/block` | Bloquear contato | `{"name": "instancia", "number": "5511999999999"}` |
-
-### Business/Catálogo
-
-| Endpoint | Descrição |
-|----------|-----------|
-| `GET /business/profile` | Ver perfil business |
-| `POST /business/profile` | Atualizar perfil |
-| `GET /business/catalog` | Listar catálogo |
-| `POST /business/catalog` | Criar produto no catálogo |
-
-## Exemplos de Uso
-
-### Enviar vídeo com legenda
-```bash
-curl -X POST https://api.uazapi.com/send/media \
-  -H "Content-Type: application/json" \
-  -H "token: SEU_TOKEN" \
-  -d '{"number": "5511999999999", "type": "video", "file": "https://exemplo.com/video.mp4", "text": "Assista agora!"}'
+```
+token: {token_instancia}        # todas as operações de instância
+admintoken: {token_admin}       # operações administrativas (marcadas com [admin])
+Content-Type: application/json
 ```
 
-### Criar grupo com participantes
-```bash
-curl -X POST https://api.uazapi.com/group/create \
-  -H "Content-Type: application/json" \
-  -H "token: SEU_TOKEN" \
-  -d '{"name": "minha-instancia", "groupName": "Minha Equipe", "participants": ["5511999999999", "5511888888888"]}'
+URL base: `https://{subdomain}.uazapi.com`
+- `free` — plano gratuito
+- `api` — plano pago
+
+## Fluxo de setup (obrigatório)
+
+Nova instância deve seguir esta ordem antes de qualquer envio:
+
+```
+POST /instance/create  →  POST /instance/connect  →  usuário escaneia QR  →  GET /instance/status  →  pronto
 ```
 
-### Enviar mensagem com delay e marcar como lida
-```bash
-curl -X POST https://api.uazapi.com/send/text \
-  -H "Content-Type: application/json" \
-  -H "token: SEU_TOKEN" \
-  -d '{"number": "5511999999999", "text": "Olá!", "delay": 2000, "readchat": true}'
-```
+---
 
-## CLI (uazapi-cli)
+## Envio de mensagens
 
-Para usar via CLI (se instalado):
-```bash
-uazapi send media --number 5511999999999 --type video --file https://exemplo.com/video.mp4 --caption "Assista"
-```
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/send/text` | `{number, text, linkPreview?, replyid?, mentions?, delay?, async?, readchat?}` |
+| POST | `/send/media` | `{number, type, file, text?, docName?, thumbnail?, mimetype?, replyid?, delay?, async?, viewOnce?}` |
+| POST | `/send/location` | `{number, latitude, longitude, name?, address?, replyid?, delay?}` |
+| POST | `/send/contact` | `{number, fullName, phoneNumber, organization?, email?, url?, replyid?}` |
+| POST | `/send/menu` | `{number, type, text, choices[], footerText?, listButton?, replyid?, delay?}` |
+| POST | `/send/carousel` | `{number, text, carousel[], replyid?, delay?}` |
+| POST | `/send/status` | `{type, text?, background_color?, font?, file?}` |
+| POST | `/send/pix-button` | `{number, pixType, pixKey, pixName?, replyid?, delay?}` |
+| POST | `/send/location-button` | `{number, text, replyid?}` |
+| POST | `/send/request-payment` | `{number, amount, title?, text?, footer?, itemName?, invoiceNumber?, pixKey?, pixType?, pixName?, paymentLink?}` |
+
+**Tipos de mídia** (`type` em `/send/media`): `image` · `video` (MP4) · `document` · `audio` · `ptt` (voz) · `ptv` (vídeo-msg) · `sticker` · `myaudio`
+
+**Tipos de menu** (`type` em `/send/menu`): `button` · `list` · `poll` · `carousel`
+
+**`viewOnce`** — disponível em `/send/media` para tipos `image`, `video` e `audio`. A mídia some após ser visualizada uma vez pelo destinatário.
+
+**Parâmetros comuns de envio:**
+- `delay` — ms antes de enviar, exibe "digitando..."
+- `replyid` — ID da mensagem para responder
+- `mentions` — números separados por vírgula para mencionar
+- `readchat` — marca conversa como lida ao enviar
+- `async` — envia de forma assíncrona (fila)
+
+---
+
+## Instância
+
+| Método | Endpoint | Body / Obs |
+|--------|----------|-----------|
+| GET | `/instance/status` | — |
+| POST | `/instance/connect` | `{phone?}` — omitir `phone` retorna QR base64; informar para código de pareamento |
+| POST | `/instance/disconnect` | — |
+| POST | `/instance/create` | `{name, systemName?, adminField01?, adminField02?}` **[admin]** |
+| DELETE | `/instance` | — deleta a instância |
+| POST | `/instance/reset` | — |
+| POST | `/instance/presence` | `{presence: "available" \| "unavailable"}` |
+| GET | `/instance/privacy` | — |
+| POST | `/instance/privacy` | `{groupadd?, last?, status?, profile?, readreceipts?, online?}` — valores: `all`, `contacts`, `contact_blacklist`, `none` |
+| POST | `/instance/updateInstanceName` | `{name}` |
+| POST | `/instance/updateDelaySettings` | `{msg_delay_min, msg_delay_max}` — ms |
+| GET | `/instance/proxy` | — |
+| POST | `/instance/proxy` | `{enable: bool, proxy_url?}` |
+| DELETE | `/instance/proxy` | — |
+| GET | `/instance/wa_messages_limits` | — verifica limitações ativas de envio no número conectado |
+| GET | `/instance/all` | — **[admin]** |
+
+**`/instance/wa_messages_limits`** — útil antes de campanhas ou para diagnosticar erros de envio. Retorna limitações como `new_chat_message_capping` (limite de novas conversas), `reachout_timelock` (bloqueio temporário de alcance) e situações associadas ao `provider_code: 463`.
+
+---
+
+## Mensagens
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/message/find` | `{chatid?, id?, track_source?, track_id?, limit?, offset?}` |
+| POST | `/message/delete` | `{id}` |
+| POST | `/message/download` | `{id, return_base64?, generate_mp3?, return_link?, transcribe?, openai_apikey?, download_quoted?}` |
+| POST | `/message/edit` | `{id, text}` |
+| POST | `/message/react` | `{number, id, text}` — `text` é o emoji; vazio remove a reação |
+| POST | `/message/markread` | `{id}` — array de IDs |
+| POST | `/message/presence` | `{number, presence, delay?}` — `presence`: `composing`, `recording`, `paused` |
+| GET | `/message/async` | — lista fila assíncrona |
+| DELETE | `/message/async` | — limpa fila assíncrona |
+| POST | `/message/pin` | `{id, duration}` — `duration` em dias: `1`, `7` ou `30`; use `0` para desafixar |
+
+---
+
+## Grupos
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| GET | `/group/list` | — |
+| POST | `/group/list` | `{getParticipants: true}` — inclui lista de membros |
+| POST | `/group/info` | `{groupJid, getParticipants?}` |
+| POST | `/group/create` | `{name, participants[]}` |
+| POST | `/group/join` | `{inviteCode}` — código ou link completo |
+| POST | `/group/leave` | `{groupJid}` |
+| POST | `/group/inviteInfo` | `{inviteCode}` — info do link sem entrar |
+| POST | `/group/resetInviteCode` | `{groupJid}` |
+| POST | `/group/updateName` | `{groupJid, name}` |
+| POST | `/group/updateDescription` | `{groupJid, description}` |
+| POST | `/group/updateImage` | `{groupJid, image}` — URL ou base64 |
+| POST | `/group/updateParticipants` | `{groupJid, action, participants[]}` — `action`: `add`, `remove`, `promote`, `demote` |
+| POST | `/group/updateAnnounce` | `{groupJid, announce: bool}` — `true` = só admins enviam |
+| POST | `/group/updateLocked` | `{groupJid, locked: bool}` — `true` = só admins editam info |
+
+---
+
+## Contatos
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| GET | `/contacts` | — lista todos |
+| POST | `/contacts/list` | `{limit?, offset?, name?, wa_chatid?}` — filtros |
+| POST | `/contact/add` | `{numbers[]}` |
+| POST | `/contact/remove` | `{numbers[]}` |
+
+---
+
+## Chat
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/chat/find` | `{limit?, offset?, sort?, wa_chatid?, name?, wa_isGroup?, wa_archived?, wa_isPinned?, wa_isBlocked?, wa_label?, lead_status?}` |
+| POST | `/chat/details` | `{number, preview?}` |
+| POST | `/chat/archive` | `{number, archive: bool}` |
+| POST | `/chat/block` | `{number, block: bool}` |
+| GET | `/chat/blocklist` | — |
+| POST | `/chat/delete` | `{number, deleteChatDB?, deleteMessagesDB?, deleteChatWhatsApp?, clearChatWhatsApp?}` |
+| POST | `/chat/mute` | `{number, muteEndTime}` — `0` = desmutar, `-1` = sempre |
+| POST | `/chat/pin` | `{number, pin: bool}` |
+| POST | `/chat/read` | `{number, read: bool}` |
+| POST | `/chat/labels` | `{number, labelids?[], add_labelid?, remove_labelid?}` |
+| POST | `/chat/check` | `{numbers[]}` — verifica quais números estão no WhatsApp |
+| POST | `/chat/editLead` | `{id, lead_name?, lead_email?, lead_status?, lead_notes?, lead_tags?}` |
+
+---
+
+## Webhook
+
+| Método | Endpoint | Body / Obs |
+|--------|----------|-----------|
+| GET | `/webhook` | — config atual |
+| POST | `/webhook` | `{url, events[], enabled?, addUrlEvents?, addUrlTypesMessages?, excludeMessages?}` |
+| GET | `/webhook/errors` | — |
+| GET | `/globalwebhook` | — **[admin]** |
+| POST | `/globalwebhook` | `{url, events[], enabled?}` **[admin]** |
+| GET | `/globalwebhook/errors` | — **[admin]** |
+
+**Eventos disponíveis:** `messages` · `connection` · `presence` · `group` · `chat` · `poll` · `label`
+
+---
+
+## Perfil
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/profile/image` | `{image}` — URL ou base64 |
+| POST | `/profile/name` | `{name}` |
+
+---
+
+## Newsletter (Canais)
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| GET | `/newsletter/list` | — |
+| POST | `/newsletter/info` | `{newsletterJid}` |
+| POST | `/newsletter/create` | `{name, description?}` |
+| POST | `/newsletter/delete` | `{newsletterJid}` |
+| POST | `/newsletter/follow` | `{newsletterJid}` |
+| POST | `/newsletter/unfollow` | `{newsletterJid}` |
+| POST | `/newsletter/mute` | `{newsletterJid}` |
+| POST | `/newsletter/unmute` | `{newsletterJid}` |
+| POST | `/newsletter/messages` | `{newsletterJid, count?}` |
+| POST | `/newsletter/search` | `{query}` |
+| POST | `/newsletter/name` | `{newsletterJid, name}` |
+| POST | `/newsletter/description` | `{newsletterJid, description}` |
+| POST | `/newsletter/picture` | `{newsletterJid, image}` |
+
+---
+
+## Business / Catálogo
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/business/get/profile` | `{number?}` — omitir retorna o próprio perfil |
+| POST | `/business/update/profile` | `{description?, address?, email?, website?, category?}` |
+| GET | `/business/get/categories` | — lista categorias disponíveis |
+| POST | `/business/catalog/list` | `{number?, limit?, offset?}` |
+| POST | `/business/catalog/info` | `{productId, number?}` |
+| POST | `/business/catalog/hide` | `{productIds[]}` |
+| POST | `/business/catalog/show` | `{productIds[]}` |
+| POST | `/business/catalog/delete` | `{productIds[]}` |
+
+---
+
+## Sender (Envio em Massa)
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/sender/simple` | `{numbers[], message{}, name?}` — `message` é o objeto de mensagem padrão |
+| POST | `/sender/advanced` | `{...config completo}` — configuração avançada de campanha |
+| POST | `/sender/listmessages` | `{id, limit?, offset?}` — mensagens de um job |
+| GET | `/sender/listfolders` | — lista jobs/pastas |
+| DELETE | `/sender/clearall` | — remove todos os jobs |
+| POST | `/sender/cleardone` | — remove apenas jobs concluídos |
+
+---
+
+## Labels
+
+| Método | Endpoint | Body |
+|--------|----------|------|
+| GET | `/labels` | — lista todas as etiquetas |
+| POST | `/label/edit` | `{name, color?, id?}` — omitir `id` cria nova; informar `id` edita existente |
+
+---
+
+## Admin
+
+| Método | Endpoint | Obs |
+|--------|----------|-----|
+| POST | `/admin/restart` | Reinicia o servidor UAZAPI **[admin]** |
+
+---
+
+## Formato do número
+
+`{código_país}{DDD}{número}` — sem `+`, espaços ou traços
+
+Brasil: `5511999999999` (55 = país · 11 = DDD · 9 dígitos)
+
+## Códigos HTTP
+
+`200` OK · `400` dados inválidos · `401` token inválido · `404` não encontrado · `429` limite de instâncias atingido · `500` erro interno
