@@ -1,6 +1,6 @@
 ---
 name: uazapi
-description: Use para qualquer tarefa com WhatsApp via UAZAPI: enviar mensagem de texto, imagem, vídeo, áudio, documento, localização, contato, botões, menu interativo, PIX, carrossel, story, viewOnce; gerenciar instância, grupos, contatos, chats, webhooks, etiquetas, newsletters, catálogo business, envio em massa. Referência completa de endpoints REST com bodies e exemplos.
+description: "Use para qualquer tarefa com WhatsApp via UAZAPI: enviar mensagem de texto, imagem, vídeo, áudio, documento, localização, contato, botões, menu interativo, PIX, carrossel, story, viewOnce; gerenciar instância, grupos, contatos, chats, webhooks, etiquetas, newsletters, catálogo business, envio em massa. Referência completa de endpoints REST com bodies e exemplos."
 ---
 
 # UAZAPI API Reference
