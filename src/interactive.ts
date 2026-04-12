@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import chalk from "chalk";
 import figlet from "figlet";
 import gradient from "gradient-string";
+import { execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import { homedir } from "os";
@@ -723,6 +724,70 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
   return handleBulkSend(config);
 }
 
+// ── Update CLI ──
+
+async function handleUpdate(): Promise<void> {
+  console.log("");
+
+  const s = p.spinner();
+  s.start("Verificando versao atual...");
+
+  let currentVersion = "desconhecida";
+  try {
+    const result = execSync("npm list -g uazapi-cli --depth=0 2>/dev/null || true", {
+      encoding: "utf-8",
+    });
+    const match = result.match(/uazapi-cli@([\d.]+)/);
+    if (match) currentVersion = match[1];
+  } catch { /* ignora */ }
+
+  s.stop(`Versao atual: ${accent(currentVersion)}`);
+
+  const confirm = await p.confirm({
+    message: `Atualizar uazapi-cli para a versao mais recente?`,
+    initialValue: true,
+  });
+
+  if (p.isCancel(confirm) || !confirm) {
+    p.log.info("Atualizacao cancelada.");
+    return mainMenu();
+  }
+
+  const s2 = p.spinner();
+  s2.start("Atualizando uazapi-cli...");
+
+  try {
+    execSync("npm install -g uazapi-cli@latest", { stdio: "pipe" });
+    s2.stop(chalk.green("Atualizado com sucesso!"));
+
+    let newVersion = "desconhecida";
+    try {
+      const result = execSync("npm list -g uazapi-cli --depth=0 2>/dev/null || true", {
+        encoding: "utf-8",
+      });
+      const match = result.match(/uazapi-cli@([\d.]+)/);
+      if (match) newVersion = match[1];
+    } catch { /* ignora */ }
+
+    p.log.success(`uazapi-cli atualizado para ${accent(newVersion)}`);
+    if (newVersion !== currentVersion && currentVersion !== "desconhecida") {
+      p.log.message(dim(`${currentVersion} → ${newVersion}`));
+    }
+  } catch (err) {
+    s2.stop(chalk.red("Erro ao atualizar"));
+    p.log.error(String(err));
+    p.log.message(dim("Tente manualmente: npm install -g uazapi-cli@latest"));
+  }
+
+  console.log("");
+  await p.text({
+    message: chalk.dim("Pressione Enter para voltar ao menu..."),
+    placeholder: "",
+  });
+
+  return mainMenu();
+}
+
 // ── Install Skills ──
 
 async function handleInstallSkills(): Promise<void> {
@@ -803,6 +868,7 @@ async function mainMenu(): Promise<void> {
     { value: "token", label: "Token da instancia" },
     { value: "admin-token", label: "Token admin" },
     { value: "install-skills", label: `${chalk.yellow("◈")} Instalar skills de IA`, hint: "Cursor, Copilot, Windsurf, Cline, Claude, Codex, Gemini, OpenCode" },
+    { value: "update", label: `${chalk.cyan("↑")} Atualizar uazapi-cli`, hint: "instala a versao mais recente" },
     { value: "exit", label: `${chalk.red("✕")} Sair` },
   );
 
@@ -835,6 +901,8 @@ async function mainMenu(): Promise<void> {
       return handleAdminToken(config);
     case "install-skills":
       return handleInstallSkills();
+    case "update":
+      return handleUpdate();
   }
 }
 
