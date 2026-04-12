@@ -12,6 +12,7 @@ import { registerGroupCommands } from "./commands/group.js";
 import { registerContactCommands } from "./commands/contact.js";
 import { registerWebhookCommands } from "./commands/webhook.js";
 import { registerSearchDocsCommand } from "./commands/search-docs.js";
+import { registerInstallSkillsCommand } from "./commands/install-skills.js";
 import {
   registerNewsletterCommands,
   registerBusinessCommands,
@@ -107,6 +108,7 @@ function bootCommander(): void {
   registerLabelCommands(program);
   registerProfileCommands(program);
   registerSearchDocsCommand(program);
+  registerInstallSkillsCommand(program);
 
   program.parse();
 }

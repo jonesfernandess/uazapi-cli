@@ -5,6 +5,7 @@ import gradient from "gradient-string";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import { homedir } from "os";
+import { TOOLS, type Tool, installForTool, isToolInstalled } from "./commands/install-skills.js";
 
 // ── Config ──
 
@@ -722,6 +723,58 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
   return handleBulkSend(config);
 }
 
+// ── Install Skills ──
+
+async function handleInstallSkills(): Promise<void> {
+  console.log("");
+  p.log.message(chalk.dim("Instala os docs da UAZAPI no seu editor/agente de IA."));
+  p.log.message(chalk.dim("Rode dentro do diretorio do seu projeto."));
+  console.log("");
+
+  p.log.message(chalk.dim("  Espaço  → marcar/desmarcar   Enter → confirmar seleção"));
+  console.log("");
+
+  const toolOptions = (Object.entries(TOOLS) as [Tool, string][]).map(([value, label]) => {
+    const installed = isToolInstalled(value);
+    return {
+      value,
+      label: installed ? `${label} ${chalk.green("✓")}` : label,
+      hint: installed ? "já instalado" : undefined,
+    };
+  });
+
+  const selected = await p.multiselect<Tool>({
+    message: "Selecione as ferramentas para instalar:",
+    options: toolOptions,
+    required: true,
+  });
+
+  if (p.isCancel(selected)) return mainMenu();
+
+  const targets = selected as Tool[];
+
+  console.log("");
+  for (const target of targets) {
+    p.log.step(`Instalando para ${chalk.cyan(TOOLS[target])}...`);
+    try {
+      installForTool(target);
+    } catch (err: unknown) {
+      p.log.error(`Falha: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    console.log("");
+  }
+
+  p.log.success("Pronto! Skills instaladas no diretório atual.");
+  console.log("");
+
+  await p.text({
+    message: chalk.dim("Pressione Enter para voltar ao menu..."),
+    placeholder: "",
+  });
+
+  return mainMenu();
+}
+
 // ── Main Menu ──
 
 async function mainMenu(): Promise<void> {
@@ -749,6 +802,7 @@ async function mainMenu(): Promise<void> {
     { value: "base-url", label: "URL da API" },
     { value: "token", label: "Token da instancia" },
     { value: "admin-token", label: "Token admin" },
+    { value: "install-skills", label: `${chalk.yellow("◈")} Instalar skills de IA`, hint: "Cursor, Copilot, Windsurf, Cline, Claude, Codex, Gemini, OpenCode" },
     { value: "exit", label: `${chalk.red("✕")} Sair` },
   );
 
@@ -779,6 +833,8 @@ async function mainMenu(): Promise<void> {
       return handleToken(config);
     case "admin-token":
       return handleAdminToken(config);
+    case "install-skills":
+      return handleInstallSkills();
   }
 }
 
