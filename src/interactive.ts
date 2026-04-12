@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import chalk from "chalk";
 import figlet from "figlet";
 import gradient from "gradient-string";
+import { execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import { homedir } from "os";
@@ -723,6 +724,71 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
   return handleBulkSend(config);
 }
 
+// ── Update CLI ──
+
+function getRepoDir(): string {
+  const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
+  if (dir.endsWith("/dist")) return dir.replace(/\/dist$/, "");
+  return dir;
+}
+
+async function handleUpdate(): Promise<void> {
+  const repoDir = getRepoDir();
+
+  console.log("");
+  p.log.message(dim(`Repositorio: ${repoDir}`));
+  console.log("");
+
+  const confirm = await p.confirm({
+    message: "Atualizar uazapi-cli (git pull + build)?",
+    initialValue: true,
+  });
+
+  if (p.isCancel(confirm) || !confirm) {
+    p.log.info("Atualizacao cancelada.");
+    return mainMenu();
+  }
+
+  console.log("");
+
+  try {
+    console.log(`  ${accent("●")} Buscando atualizacoes...`);
+    execSync("git fetch origin main", { cwd: repoDir, stdio: "inherit" });
+
+    const status = execSync("git status --porcelain", { cwd: repoDir, encoding: "utf-8" }).trim();
+    if (status) {
+      console.log(chalk.yellow("\n  ⚠ Mudancas locais detectadas. Guardando com stash...\n"));
+      execSync("git stash", { cwd: repoDir, stdio: "inherit" });
+    }
+
+    execSync("git pull origin main", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    console.log(`  ${accent("●")} Instalando dependencias...`);
+    console.log("");
+    execSync("npm install", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    console.log(`  ${accent("●")} Compilando...`);
+    console.log("");
+    execSync("npm run build", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    p.log.success("uazapi-cli atualizado com sucesso!");
+  } catch (err) {
+    console.log("");
+    p.log.error(`Falha na atualizacao: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  console.log("");
+  await p.text({
+    message: chalk.dim("Pressione Enter para voltar ao menu..."),
+    placeholder: "",
+  });
+
+  return mainMenu();
+}
+
 // ── Install Skills ──
 
 async function handleInstallSkills(): Promise<void> {
@@ -803,6 +869,7 @@ async function mainMenu(): Promise<void> {
     { value: "token", label: "Token da instancia" },
     { value: "admin-token", label: "Token admin" },
     { value: "install-skills", label: `${chalk.yellow("◈")} Instalar skills de IA`, hint: "Cursor, Copilot, Windsurf, Cline, Claude, Codex, Gemini, OpenCode" },
+    { value: "update", label: `${chalk.cyan("↑")} Atualizar uazapi-cli`, hint: "instala a versao mais recente" },
     { value: "exit", label: `${chalk.red("✕")} Sair` },
   );
 
@@ -835,6 +902,8 @@ async function mainMenu(): Promise<void> {
       return handleAdminToken(config);
     case "install-skills":
       return handleInstallSkills();
+    case "update":
+      return handleUpdate();
   }
 }
 
