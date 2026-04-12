@@ -726,25 +726,21 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
 
 // ── Update CLI ──
 
+function getRepoDir(): string {
+  const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
+  if (dir.endsWith("/dist")) return dir.replace(/\/dist$/, "");
+  return dir;
+}
+
 async function handleUpdate(): Promise<void> {
+  const repoDir = getRepoDir();
+
+  console.log("");
+  p.log.message(dim(`Repositorio: ${repoDir}`));
   console.log("");
 
-  const s = p.spinner();
-  s.start("Verificando versao atual...");
-
-  let currentVersion = "desconhecida";
-  try {
-    const result = execSync("npm list -g uazapi-cli --depth=0 2>/dev/null || true", {
-      encoding: "utf-8",
-    });
-    const match = result.match(/uazapi-cli@([\d.]+)/);
-    if (match) currentVersion = match[1];
-  } catch { /* ignora */ }
-
-  s.stop(`Versao atual: ${accent(currentVersion)}`);
-
   const confirm = await p.confirm({
-    message: `Atualizar uazapi-cli para a versao mais recente?`,
+    message: "Atualizar uazapi-cli (git pull + build)?",
     initialValue: true,
   });
 
@@ -753,30 +749,35 @@ async function handleUpdate(): Promise<void> {
     return mainMenu();
   }
 
-  const s2 = p.spinner();
-  s2.start("Atualizando uazapi-cli...");
+  console.log("");
 
   try {
-    execSync("npm install -g uazapi-cli@latest", { stdio: "pipe" });
-    s2.stop(chalk.green("Atualizado com sucesso!"));
+    console.log(`  ${accent("●")} Buscando atualizacoes...`);
+    execSync("git fetch origin main", { cwd: repoDir, stdio: "inherit" });
 
-    let newVersion = "desconhecida";
-    try {
-      const result = execSync("npm list -g uazapi-cli --depth=0 2>/dev/null || true", {
-        encoding: "utf-8",
-      });
-      const match = result.match(/uazapi-cli@([\d.]+)/);
-      if (match) newVersion = match[1];
-    } catch { /* ignora */ }
-
-    p.log.success(`uazapi-cli atualizado para ${accent(newVersion)}`);
-    if (newVersion !== currentVersion && currentVersion !== "desconhecida") {
-      p.log.message(dim(`${currentVersion} → ${newVersion}`));
+    const status = execSync("git status --porcelain", { cwd: repoDir, encoding: "utf-8" }).trim();
+    if (status) {
+      console.log(chalk.yellow("\n  ⚠ Mudancas locais detectadas. Guardando com stash...\n"));
+      execSync("git stash", { cwd: repoDir, stdio: "inherit" });
     }
+
+    execSync("git pull origin main", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    console.log(`  ${accent("●")} Instalando dependencias...`);
+    console.log("");
+    execSync("npm install", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    console.log(`  ${accent("●")} Compilando...`);
+    console.log("");
+    execSync("npm run build", { cwd: repoDir, stdio: "inherit" });
+
+    console.log("");
+    p.log.success("uazapi-cli atualizado com sucesso!");
   } catch (err) {
-    s2.stop(chalk.red("Erro ao atualizar"));
-    p.log.error(String(err));
-    p.log.message(dim("Tente manualmente: npm install -g uazapi-cli@latest"));
+    console.log("");
+    p.log.error(`Falha na atualizacao: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   console.log("");
