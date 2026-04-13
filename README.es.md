@@ -75,6 +75,8 @@ Ejecute `uazapi` sin argumentos:
   ○ ☰  Listar instancias    (todas las instancias de la API)
   ○ ✉  Enviar mensaje       (envio rapido de texto)
   ○ ⚙  Setup wizard
+  ○ ◈  Instalar skills de IA
+  ○ ↑  Actualizar uazapi-cli
   ○ ✕  Salir
 ```
 
@@ -105,6 +107,7 @@ uazapi [comando] [subcomando] [opciones]
 | `profile` | Administrar perfil de WhatsApp |
 | `setup` | Wizard de configuracion |
 | `update` | Actualizar a la version mas reciente |
+| `install-skills` | Instalar skills de IA (Claude, Cursor, Copilot, Cline, Windsurf, Codex, OpenCode, Gemini, Hermes, OpenClaw) |
 
 ### Ejemplos
 
@@ -154,6 +157,114 @@ En la primera ejecucion, el wizard crea `~/.uazapi-cli/config.json`:
 | `adminToken` | Token admin (opcional, para listar instancias y operaciones admin) |
 
 Puede reconfigurar en cualquier momento con `uazapi setup` o cambiar valores individuales desde el menu interactivo.
+
+## Skills para IA
+
+Enséñele a su agente a usar UAZAPI en segundos. Las skills contienen la referencia completa de la API REST y la CLI en formato optimizado para LLMs — cargadas automáticamente cuando son relevantes.
+
+### Via uazapi-cli (recomendado)
+
+```bash
+uazapi install-skills claude    # Claude Code  → ~/.claude/skills/
+uazapi install-skills cursor    # Cursor       → ~/.cursor/skills/
+uazapi install-skills copilot   # Copilot      → ~/.copilot/skills/
+uazapi install-skills cline     # Cline        → ~/.cline/skills/
+uazapi install-skills windsurf  # Windsurf     → ~/.codeium/windsurf/skills/
+uazapi install-skills codex     # Codex CLI    → ~/.codex/skills/
+uazapi install-skills opencode  # OpenCode     → ~/.config/opencode/skills/
+uazapi install-skills gemini    # Gemini CLI   → ~/.gemini/skills/
+uazapi install-skills hermes    # Hermes       → ~/.hermes/skills/
+uazapi install-skills openclaw  # OpenClaw     → ~/.openclaw/skills/
+uazapi install-skills all       # Todos a la vez
+```
+
+Instala **globalmente** por defecto (funciona en cualquier proyecto). Use `--local` para instalar en el proyecto actual.
+
+O use el menu interactivo: `uazapi` → **Instalar skills de IA**
+
+### Sin la CLI — via prompt para su agente de IA
+
+Pegue el prompt correspondiente a su herramienta. El agente descarga los archivos del repositorio y los instala en el lugar correcto — sin necesitar `uazapi-cli`.
+
+**Claude Code:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.claude/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.claude/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.claude/skills/uazapi-cli/SKILL.md
+```
+
+**Cursor:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.cursor/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.cursor/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.cursor/skills/uazapi-cli/SKILL.md
+```
+
+**GitHub Copilot:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.copilot/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.copilot/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.copilot/skills/uazapi-cli/SKILL.md
+```
+
+**Cline:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.cline/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.cline/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.cline/skills/uazapi-cli/SKILL.md
+```
+
+**Windsurf:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.codeium/windsurf/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.codeium/windsurf/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.codeium/windsurf/skills/uazapi-cli/SKILL.md
+```
+
+**Codex CLI:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.codex/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.codex/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.codex/skills/uazapi-cli/SKILL.md
+```
+
+**OpenCode:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.config/opencode/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.config/opencode/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.config/opencode/skills/uazapi-cli/SKILL.md
+```
+
+**Gemini CLI:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.gemini/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.gemini/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.gemini/skills/uazapi-cli/SKILL.md
+```
+
+**Hermes (Nous Research):**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.hermes/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.hermes/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.hermes/skills/uazapi-cli/SKILL.md
+```
+
+**OpenClaw:**
+```
+Descarga los dos archivos de abajo y guárdalos en ~/.openclaw/skills/ con el contenido completo (incluyendo el frontmatter YAML). Crea los directorios si no existen.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.openclaw/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.openclaw/skills/uazapi-cli/SKILL.md
+```
 
 ## Build local
 
