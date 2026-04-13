@@ -75,6 +75,8 @@ Run `uazapi` with no arguments:
   ○ ☰  List instances      (all API instances)
   ○ ✉  Send message        (quick text send)
   ○ ⚙  Setup wizard
+  ○ ◈  Install AI skills
+  ○ ↑  Update uazapi-cli
   ○ ✕  Exit
 ```
 
@@ -105,6 +107,7 @@ uazapi [command] [subcommand] [options]
 | `profile` | Manage WhatsApp profile |
 | `setup` | Interactive setup wizard |
 | `update` | Update to latest version |
+| `install-skills` | Install AI skills (Claude, Cursor, Copilot, Cline, Windsurf, Codex, OpenCode, Gemini, Hermes, OpenClaw) |
 
 ### Examples
 

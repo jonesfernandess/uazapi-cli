@@ -77,6 +77,8 @@ Rode `uazapi` sem argumentos:
   ○ ☰  Listar instancias   (todas as instancias da API)
   ○ ✉  Enviar mensagem     (envio rapido de texto)
   ○ ⚙  Setup wizard
+  ○ ◈  Instalar skills de IA
+  ○ ↑  Atualizar uazapi-cli
   ○ ✕  Sair
 ```
 
@@ -107,6 +109,7 @@ uazapi [comando] [subcomando] [opcoes]
 | `profile` | Gerenciar perfil do WhatsApp |
 | `setup` | Wizard de configuracao |
 | `update` | Atualizar para a versao mais recente |
+| `install-skills` | Instalar skills de IA (Claude, Cursor, Copilot, Cline, Windsurf, Codex, OpenCode, Gemini, Hermes, OpenClaw) |
 
 ### Exemplos
 
