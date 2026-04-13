@@ -1,7 +1,8 @@
 import { Command } from "commander";
-import { readFileSync, writeFileSync, mkdirSync, existsSync, appendFileSync } from "fs";
-import { resolve, dirname } from "path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { homedir } from "os";
 import chalk from "chalk";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,27 +42,6 @@ export function stripFrontmatter(content: string): string {
 
 // ─── File helpers ─────────────────────────────────────────────────────────────
 
-const SENTINEL = "<!-- uazapi-skills -->";
-
-function hasSentinel(path: string): boolean {
-  if (!existsSync(path)) return false;
-  return readFileSync(path, "utf-8").includes(SENTINEL);
-}
-
-/** Returns true if the skill is already installed for the given tool in cwd. */
-export function isToolInstalled(tool: Tool): boolean {
-  switch (tool) {
-    case "cursor":   return existsSync(".cursor/rules/uazapi-api.mdc");
-    case "windsurf": return existsSync(".windsurf/rules/uazapi-api.md");
-    case "cline":    return existsSync(".clinerules/uazapi-api.md");
-    case "copilot":  return hasSentinel(".github/copilot-instructions.md");
-    case "claude":   return hasSentinel("CLAUDE.md");
-    case "codex":    return hasSentinel("AGENTS.md");
-    case "opencode": return hasSentinel("AGENTS.md");
-    case "gemini":   return hasSentinel("GEMINI.md");
-  }
-}
-
 function ensureDir(path: string): void {
   if (!existsSync(path)) mkdirSync(path, { recursive: true });
 }
@@ -71,155 +51,134 @@ function write(path: string, content: string): void {
   console.log(`  ${chalk.green("✓")} ${chalk.dim(path)}`);
 }
 
+// ─── Skill directory installer (shared by all tools) ─────────────────────────
+
 /**
- * Appends content to a file, but only if the UAZAPI sentinel is not already
- * present — prevents duplicates when multiple tools share the same file (e.g.
- * AGENTS.md is used by both Codex and OpenCode).
+ * All modern AI coding tools (Claude Code, Cursor, Copilot, Cline, Windsurf,
+ * Codex, OpenCode, Gemini) share the same skill format: a directory named
+ * after the skill, containing a SKILL.md file with YAML frontmatter.
+ *
+ * The frontmatter is preserved as-is — it carries the `name` and `description`
+ * fields used by each tool's auto-discovery mechanism.
  */
-function appendOnce(path: string, content: string): void {
-  const exists = existsSync(path);
-  if (exists && readFileSync(path, "utf-8").includes(SENTINEL)) {
-    console.log(`  ${chalk.dim("–")} ${chalk.dim(path)} ${chalk.dim("(already installed, skipped)")}`);
-    return;
-  }
-  appendFileSync(path, (exists ? "\n\n" : "") + SENTINEL + "\n\n" + content, "utf-8");
-  console.log(`  ${chalk.green("✓")} ${chalk.dim(path)} ${exists ? chalk.dim("(updated)") : chalk.dim("(created)")}`);
+function installSkillDir(skillsBase: string, apiRaw: string, cliRaw: string): void {
+  ensureDir(join(skillsBase, "uazapi-api"));
+  ensureDir(join(skillsBase, "uazapi-cli"));
+  write(join(skillsBase, "uazapi-api", "SKILL.md"), apiRaw);
+  write(join(skillsBase, "uazapi-cli", "SKILL.md"), cliRaw);
 }
 
-function warn(msg: string): void {
-  console.log(`  ${chalk.yellow("⚠")} ${chalk.yellow(msg)}`);
+// ─── Per-tool installers ──────────────────────────────────────────────────────
+
+function installClaude(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.claude/skills/
+  // Local:   .claude/skills/
+  const base = isGlobal
+    ? join(homedir(), ".claude", "skills")
+    : join(".claude", "skills");
+  installSkillDir(base, api, cli);
 }
 
-// ─── Installers ───────────────────────────────────────────────────────────────
-
-function installCursor(api: string, cli: string): void {
-  ensureDir(".cursor/rules");
-
-  const header = (desc: string) => `---\ndescription: "${desc}"\nalwaysApply: false\n---\n\n`;
-
-  write(
-    ".cursor/rules/uazapi-api.mdc",
-    header("UAZAPI REST API reference — endpoint contracts, request/response shapes, ID formats") + api
-  );
-  write(
-    ".cursor/rules/uazapi-cli.mdc",
-    header("uazapi-cli commands — send messages, manage instances, groups, webhooks from terminal") + cli
-  );
-
-  console.log(chalk.dim("\n  Tip: attach rules manually in Cursor, or set alwaysApply: true to load on every chat."));
+function installCursor(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.cursor/skills/
+  // Local:   .cursor/skills/
+  const base = isGlobal
+    ? join(homedir(), ".cursor", "skills")
+    : join(".cursor", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installCopilot(api: string, cli: string): void {
-  ensureDir(".github");
-  const content =
-    `# UAZAPI CLI Reference\n\n` + cli +
-    `\n\n---\n\n` +
-    `# UAZAPI REST API Reference\n\n` + api;
-
-  appendOnce(".github/copilot-instructions.md", content);
-  warn("Copilot Code Review has a ~4KB limit. The full reference works in Copilot Chat.");
+function installCopilot(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.copilot/skills/
+  // Local:   .github/skills/
+  const base = isGlobal
+    ? join(homedir(), ".copilot", "skills")
+    : join(".github", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installWindsurf(api: string, cli: string): void {
-  ensureDir(".windsurf/rules");
-
-  write(".windsurf/rules/uazapi-cli.md", cli);
-  write(".windsurf/rules/uazapi-api.md", api);
-
-  const apiKb = Math.round(Buffer.byteLength(api, "utf-8") / 1024);
-  const cliKb = Math.round(Buffer.byteLength(cli, "utf-8") / 1024);
-  const totalKb = apiKb + cliKb;
-
-  if (apiKb > 6 || cliKb > 6)
-    warn(`Windsurf has a 6KB per-file limit (uazapi-api: ~${apiKb}KB, uazapi-cli: ~${cliKb}KB). Content may be truncated.`);
-  if (totalKb > 12)
-    warn(`Windsurf has a 12KB total rules limit (~${totalKb}KB). Consider keeping only uazapi-api.md.`);
+function installCline(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.cline/skills/
+  // Local:   .cline/skills/
+  const base = isGlobal
+    ? join(homedir(), ".cline", "skills")
+    : join(".cline", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installCline(api: string, cli: string): void {
-  ensureDir(".clinerules");
-  write(".clinerules/uazapi-api.md", api);
-  write(".clinerules/uazapi-cli.md", cli);
+function installWindsurf(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.codeium/windsurf/skills/
+  // Local:   .windsurf/skills/
+  const base = isGlobal
+    ? join(homedir(), ".codeium", "windsurf", "skills")
+    : join(".windsurf", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installClaude(api: string, cli: string): void {
-  // CLAUDE.md should stay concise (<100 lines recommended).
-  // Write a lean section pointing to search-docs + key ID format rules.
-  // Reference the full skill files for on-demand loading via @filename.
-  void api; void cli; // full content available in skills/ directory
-  const content =
-`## UAZAPI WhatsApp API
-
-This project integrates with the UAZAPI WhatsApp API.
-
-### Endpoint lookup
-Use \`uazapi search-docs\` to find any endpoint details without loading the full reference:
-
-\`\`\`bash
-uazapi search-docs "keyword"           # search endpoints + guide sections
-uazapi search-docs --list              # all available tags and topics
-uazapi search-docs --section "name"    # get a full guide section
-uazapi search-docs "query" --pretty    # JSON output with full descriptions
-\`\`\`
-
-### Critical ID format rules
-- \`number\` fields: digits only, no \`+\` — e.g. \`555193667706\`
-- \`chatid\` (individual): \`555193667706@s.whatsapp.net\`
-- \`groupJid\`: \`120363425061733477@g.us\`
-- Message \`id\` (for reply/react/delete): \`owner:messageid\` format
-
-### Full references (load on demand)
-- REST API contracts: \`skills/uazapi-api/SKILL.md\`
-- CLI commands: \`skills/uazapi-cli/SKILL.md\`
-`;
-
-  appendOnce("CLAUDE.md", content);
-  console.log(chalk.dim("\n  Full skill files: skills/uazapi-api/SKILL.md and skills/uazapi-cli/SKILL.md"));
-  console.log(chalk.dim("  Reference them in chat with @skills/uazapi-api/SKILL.md"));
+function installCodex(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.codex/skills/
+  // Local:   .agents/skills/  (Codex-standard project path)
+  const base = isGlobal
+    ? join(homedir(), ".codex", "skills")
+    : join(".agents", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installAgentsMd(api: string, cli: string, tool: string): void {
-  // Codex CLI and OpenCode both use AGENTS.md.
-  // Running both installers is safe — appendOnce prevents duplicates.
-  const content =
-    `# UAZAPI REST API Reference\n\n` + api +
-    `\n\n---\n\n` +
-    `# UAZAPI CLI Reference\n\n` + cli;
-
-  appendOnce("AGENTS.md", content);
-
-  if (tool === "codex") {
-    const totalKb = Math.round(Buffer.byteLength(content, "utf-8") / 1024);
-    if (totalKb > 32)
-      warn(`Codex CLI has a 32KB limit for AGENTS.md (~${totalKb}KB). Content may be partially ignored.`);
-  }
+function installOpenCode(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.config/opencode/skills/
+  // Local:   .opencode/skills/
+  const base = isGlobal
+    ? join(homedir(), ".config", "opencode", "skills")
+    : join(".opencode", "skills");
+  installSkillDir(base, api, cli);
 }
 
-function installGemini(api: string, cli: string): void {
-  const content =
-    `# UAZAPI REST API Reference\n\n` + api +
-    `\n\n---\n\n` +
-    `# UAZAPI CLI Reference\n\n` + cli;
+function installGemini(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.gemini/skills/
+  // Local:   .gemini/skills/
+  const base = isGlobal
+    ? join(homedir(), ".gemini", "skills")
+    : join(".gemini", "skills");
+  installSkillDir(base, api, cli);
+}
 
-  appendOnce("GEMINI.md", content);
-  console.log(chalk.dim("\n  Run /memory refresh in Gemini CLI to reload the context."));
+// ─── Detection ────────────────────────────────────────────────────────────────
+
+/** Returns true if the skill is already installed for the given tool and scope. */
+export function isToolInstalled(tool: Tool, isGlobal = true): boolean {
+  const paths: Record<Tool, [string, string]> = {
+    claude:   [join(homedir(), ".claude",  "skills"),                    ".claude/skills"],
+    cursor:   [join(homedir(), ".cursor",  "skills"),                    ".cursor/skills"],
+    copilot:  [join(homedir(), ".copilot", "skills"),                    ".github/skills"],
+    cline:    [join(homedir(), ".cline",   "skills"),                    ".cline/skills"],
+    windsurf: [join(homedir(), ".codeium", "windsurf", "skills"),        ".windsurf/skills"],
+    codex:    [join(homedir(), ".codex",   "skills"),                    ".agents/skills"],
+    opencode: [join(homedir(), ".config",  "opencode", "skills"),        ".opencode/skills"],
+    gemini:   [join(homedir(), ".gemini",  "skills"),                    ".gemini/skills"],
+  };
+  const base = paths[tool][isGlobal ? 0 : 1];
+  return existsSync(join(base, "uazapi-api", "SKILL.md"));
 }
 
 // ─── Public installer ─────────────────────────────────────────────────────────
 
-/** Installs skills for a single tool. Prints progress to stdout. */
-export function installForTool(target: Tool): void {
-  const api = stripFrontmatter(readSkill("uazapi-api"));
-  const cli = stripFrontmatter(readSkill("uazapi-cli"));
+/**
+ * Installs skills for a single tool. Prints progress to stdout.
+ * @param target  Tool to install for.
+ * @param isGlobal  true = home directory (default); false = current project directory.
+ */
+export function installForTool(target: Tool, isGlobal = true): void {
+  const apiRaw = readSkill("uazapi-api");
+  const cliRaw = readSkill("uazapi-cli");
   switch (target) {
-    case "cursor":   installCursor(api, cli); break;
-    case "copilot":  installCopilot(api, cli); break;
-    case "windsurf": installWindsurf(api, cli); break;
-    case "cline":    installCline(api, cli); break;
-    case "claude":   installClaude(api, cli); break;
-    case "codex":    installAgentsMd(api, cli, "codex"); break;
-    case "opencode": installAgentsMd(api, cli, "opencode"); break;
-    case "gemini":   installGemini(api, cli); break;
+    case "claude":   installClaude(apiRaw, cliRaw, isGlobal); break;
+    case "cursor":   installCursor(apiRaw, cliRaw, isGlobal); break;
+    case "copilot":  installCopilot(apiRaw, cliRaw, isGlobal); break;
+    case "cline":    installCline(apiRaw, cliRaw, isGlobal); break;
+    case "windsurf": installWindsurf(apiRaw, cliRaw, isGlobal); break;
+    case "codex":    installCodex(apiRaw, cliRaw, isGlobal); break;
+    case "opencode": installOpenCode(apiRaw, cliRaw, isGlobal); break;
+    case "gemini":   installGemini(apiRaw, cliRaw, isGlobal); break;
   }
 }
 
@@ -229,39 +188,44 @@ export function registerInstallSkillsCommand(program: Command): void {
   program
     .command("install-skills")
     .description(
-      "Install UAZAPI skills in your AI coding tool " +
+      "Install UAZAPI skills globally in your AI coding tool " +
       "(Cursor, Copilot, Windsurf, Cline, Claude Code, Codex CLI, Gemini CLI, OpenCode)"
     )
     .argument("[tool]", `Tool to install for: ${Object.keys(TOOLS).join(" | ")} | all`)
-    .action((tool: string | undefined) => {
+    .option("--local", "Install in the current project directory instead of the home directory")
+    .action((tool: string | undefined, opts: { local?: boolean }) => {
+      const isGlobal = !opts.local;
       const validTools = [...Object.keys(TOOLS), "all"];
 
       if (!tool || !validTools.includes(tool)) {
-        console.log(chalk.bold("\nUsage: uazapi install-skills <tool>\n"));
+        console.log(chalk.bold("\nUsage: uazapi install-skills <tool> [--local]\n"));
         console.log("Available tools:\n");
         for (const [key, name] of Object.entries(TOOLS)) {
           console.log(`  ${chalk.cyan(key.padEnd(10))} ${name}`);
         }
         console.log(`  ${"all".padEnd(10)} Install for all tools`);
         console.log();
+        console.log(chalk.dim("By default, skills are installed globally (~/ home directory)."));
+        console.log(chalk.dim("Use --local to install in the current project directory instead."));
+        console.log();
         process.exit(tool ? 1 : 0);
       }
 
       const targets: Tool[] = tool === "all" ? (Object.keys(TOOLS) as Tool[]) : [tool as Tool];
-
-      const api = stripFrontmatter(readSkill("uazapi-api"));
-      const cli = stripFrontmatter(readSkill("uazapi-cli"));
+      const scopeLabel = isGlobal ? chalk.cyan("global (~/)") : chalk.yellow(`local (${process.cwd()})`);
+      console.log(chalk.dim(`\nScope: ${scopeLabel}\n`));
 
       for (const target of targets) {
-        console.log(chalk.bold(`\nInstalling for ${TOOLS[target]}...\n`));
+        console.log(chalk.bold(`Installing for ${TOOLS[target]}...\n`));
         try {
-          installForTool(target);
+          installForTool(target, isGlobal);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           console.error(chalk.red(`  ✗ Failed: ${msg}`));
         }
+        console.log();
       }
 
-      console.log(chalk.green("\nDone.\n"));
+      console.log(chalk.green("Done.\n"));
     });
 }

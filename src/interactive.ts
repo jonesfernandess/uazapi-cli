@@ -794,14 +794,24 @@ async function handleUpdate(): Promise<void> {
 async function handleInstallSkills(): Promise<void> {
   console.log("");
   p.log.message(chalk.dim("Instala os docs da UAZAPI no seu editor/agente de IA."));
-  p.log.message(chalk.dim("Rode dentro do diretorio do seu projeto."));
   console.log("");
 
+  const scope = await p.select({
+    message: "Onde instalar as skills?",
+    options: [
+      { value: "global", label: `${chalk.cyan("◉")} Globalmente ${chalk.dim("(recomendado)")}`, hint: "~/ — disponível em qualquer projeto" },
+      { value: "local",  label: `${chalk.yellow("◎")} Neste diretório`, hint: process.cwd() },
+    ],
+  });
+  if (p.isCancel(scope)) return mainMenu();
+  const isGlobal = scope === "global";
+
+  console.log("");
   p.log.message(chalk.dim("  Espaço  → marcar/desmarcar   Enter → confirmar seleção"));
   console.log("");
 
   const toolOptions = (Object.entries(TOOLS) as [Tool, string][]).map(([value, label]) => {
-    const installed = isToolInstalled(value);
+    const installed = isToolInstalled(value, isGlobal);
     return {
       value,
       label: installed ? `${label} ${chalk.green("✓")}` : label,
@@ -823,14 +833,16 @@ async function handleInstallSkills(): Promise<void> {
   for (const target of targets) {
     p.log.step(`Instalando para ${chalk.cyan(TOOLS[target])}...`);
     try {
-      installForTool(target);
+      installForTool(target, isGlobal);
     } catch (err: unknown) {
       p.log.error(`Falha: ${err instanceof Error ? err.message : String(err)}`);
     }
     console.log("");
   }
 
-  p.log.success("Pronto! Skills instaladas no diretório atual.");
+  p.log.success(isGlobal
+    ? "Pronto! Skills instaladas globalmente (~/)."
+    : "Pronto! Skills instaladas no diretório atual.");
   console.log("");
 
   await p.text({
