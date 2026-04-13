@@ -7,7 +7,7 @@ import chalk from "chalk";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Tool = "cursor" | "copilot" | "windsurf" | "cline" | "claude" | "codex" | "gemini" | "opencode";
+export type Tool = "cursor" | "copilot" | "windsurf" | "cline" | "claude" | "codex" | "gemini" | "opencode" | "hermes" | "openclaw";
 
 export const TOOLS: Record<Tool, string> = {
   cursor:   "Cursor",
@@ -18,6 +18,8 @@ export const TOOLS: Record<Tool, string> = {
   codex:    "Codex CLI (OpenAI)",
   gemini:   "Gemini CLI (Google)",
   opencode: "OpenCode",
+  hermes:   "Hermes (Nous Research)",
+  openclaw: "OpenClaw",
 };
 
 // ─── Skill loading ────────────────────────────────────────────────────────────
@@ -142,19 +144,40 @@ function installGemini(api: string, cli: string, isGlobal: boolean): void {
   installSkillDir(base, api, cli);
 }
 
+function installHermes(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.hermes/skills/
+  // Local:   .hermes/skills/
+  // Note: existing skill frontmatter already includes metadata.hermes section
+  const base = isGlobal
+    ? join(homedir(), ".hermes", "skills")
+    : join(".hermes", "skills");
+  installSkillDir(base, api, cli);
+}
+
+function installOpenClaw(api: string, cli: string, isGlobal: boolean): void {
+  // Global:  ~/.openclaw/skills/
+  // Local:   .agents/skills/  (OpenClaw workspace priority path)
+  const base = isGlobal
+    ? join(homedir(), ".openclaw", "skills")
+    : join(".agents", "skills");
+  installSkillDir(base, api, cli);
+}
+
 // ─── Detection ────────────────────────────────────────────────────────────────
 
 /** Returns true if the skill is already installed for the given tool and scope. */
 export function isToolInstalled(tool: Tool, isGlobal = true): boolean {
   const paths: Record<Tool, [string, string]> = {
-    claude:   [join(homedir(), ".claude",  "skills"),                    ".claude/skills"],
-    cursor:   [join(homedir(), ".cursor",  "skills"),                    ".cursor/skills"],
-    copilot:  [join(homedir(), ".copilot", "skills"),                    ".github/skills"],
-    cline:    [join(homedir(), ".cline",   "skills"),                    ".cline/skills"],
-    windsurf: [join(homedir(), ".codeium", "windsurf", "skills"),        ".windsurf/skills"],
-    codex:    [join(homedir(), ".codex",   "skills"),                    ".agents/skills"],
-    opencode: [join(homedir(), ".config",  "opencode", "skills"),        ".opencode/skills"],
-    gemini:   [join(homedir(), ".gemini",  "skills"),                    ".gemini/skills"],
+    claude:   [join(homedir(), ".claude",   "skills"),                 ".claude/skills"],
+    cursor:   [join(homedir(), ".cursor",   "skills"),                 ".cursor/skills"],
+    copilot:  [join(homedir(), ".copilot",  "skills"),                 ".github/skills"],
+    cline:    [join(homedir(), ".cline",    "skills"),                 ".cline/skills"],
+    windsurf: [join(homedir(), ".codeium",  "windsurf", "skills"),     ".windsurf/skills"],
+    codex:    [join(homedir(), ".codex",    "skills"),                 ".agents/skills"],
+    opencode: [join(homedir(), ".config",   "opencode", "skills"),     ".opencode/skills"],
+    gemini:   [join(homedir(), ".gemini",   "skills"),                 ".gemini/skills"],
+    hermes:   [join(homedir(), ".hermes",   "skills"),                 ".hermes/skills"],
+    openclaw: [join(homedir(), ".openclaw", "skills"),                 ".agents/skills"],
   };
   const base = paths[tool][isGlobal ? 0 : 1];
   return existsSync(join(base, "uazapi-api", "SKILL.md"));
@@ -179,6 +202,8 @@ export function installForTool(target: Tool, isGlobal = true): void {
     case "codex":    installCodex(apiRaw, cliRaw, isGlobal); break;
     case "opencode": installOpenCode(apiRaw, cliRaw, isGlobal); break;
     case "gemini":   installGemini(apiRaw, cliRaw, isGlobal); break;
+    case "hermes":   installHermes(apiRaw, cliRaw, isGlobal); break;
+    case "openclaw": installOpenClaw(apiRaw, cliRaw, isGlobal); break;
   }
 }
 

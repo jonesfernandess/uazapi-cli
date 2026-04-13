@@ -170,6 +170,8 @@ uazapi install-skills windsurf  # Windsurf     → ~/.codeium/windsurf/skills/
 uazapi install-skills codex     # Codex CLI    → ~/.codex/skills/
 uazapi install-skills opencode  # OpenCode     → ~/.config/opencode/skills/
 uazapi install-skills gemini    # Gemini CLI   → ~/.gemini/skills/
+uazapi install-skills hermes    # Hermes       → ~/.hermes/skills/
+uazapi install-skills openclaw  # OpenClaw     → ~/.openclaw/skills/
 uazapi install-skills all       # All at once
 ```
 
@@ -243,6 +245,22 @@ Download the two files below and save them to ~/.gemini/skills/ keeping the full
 
 - https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.gemini/skills/uazapi-api/SKILL.md
 - https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.gemini/skills/uazapi-cli/SKILL.md
+```
+
+**Hermes (Nous Research):**
+```
+Download the two files below and save them to ~/.hermes/skills/ keeping the full content (including the YAML frontmatter). Create the directories if they don't exist.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.hermes/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.hermes/skills/uazapi-cli/SKILL.md
+```
+
+**OpenClaw:**
+```
+Download the two files below and save them to ~/.openclaw/skills/ keeping the full content (including the YAML frontmatter). Create the directories if they don't exist.
+
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-api/SKILL.md → ~/.openclaw/skills/uazapi-api/SKILL.md
+- https://raw.githubusercontent.com/jonesfernandess/uazapi-cli/main/skills/uazapi-cli/SKILL.md → ~/.openclaw/skills/uazapi-cli/SKILL.md
 ```
 
 ## Build from source
