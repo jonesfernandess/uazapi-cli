@@ -129,6 +129,16 @@ uazapi send pix-button --to 5511999999999 --key "sua-chave-pix" --amount 49.90
 # Postar um Story no WhatsApp
 uazapi send status --type text --message "Novidade!"
 
+# Enviar botão interativo (sem mídia)
+# choices usa strings "Label|id" — não objetos {id, text}
+uazapi send menu --number 5511999999999 --type button --text "Olá! Escolha uma opção:" \
+  --choices '["Falar com atendente|atendente","Ver horários|horarios","Encerrar|encerrar"]'
+
+# Enviar lista interativa
+uazapi send menu --number 5511999999999 --type list --text "Nosso catálogo:" \
+  --list-button "Ver opções" \
+  --choices '["[Eletrônicos]","Smartphones|phones|Últimos lançamentos","Notebooks|notes|Modelos 2024"]'
+
 # Configurar webhook
 uazapi webhook set --url https://seu-servidor.com/webhook
 
