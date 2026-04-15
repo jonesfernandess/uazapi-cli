@@ -134,11 +134,38 @@ POST /instance/create  →  POST /instance/connect  →  user scans QR  →  GET
 | `choices` | array | yes | see formats below |
 | `footerText` | string | no | footer (button/list) |
 | `listButton` | string | no | button label for lists |
+| `imageButton` | string | no | image URL or base64 for button type |
+| `selectableCount` | integer | no | max selectable options (poll only) |
 
 `choices` format by type:
-- `button` / `list`: `[{ "id": "1", "text": "Label", "description": "optional" }, ...]`
+- `button`: array of strings — `"texto|id"`, `"texto|copy:código"`, `"texto|call:+55..."`, `"texto|https://url"`  
+  ID can be omitted: `"texto"` (ID equals text). Mixing reply buttons with call/url/copy shows a web-incompatible warning.
+- `list`: array of strings — `"[Título da Seção]"` starts a section, `"texto|id|descrição"` is a list item (id and descrição are optional)
 - `poll`: `["Option A", "Option B", "Option C"]`
 - `carousel`: same as `POST /send/carousel`
+
+**button example (no media):**
+```json
+{
+  "number": "5511999999999",
+  "type": "button",
+  "text": "Como podemos ajudar?",
+  "choices": ["Suporte Técnico|suporte", "Fazer Pedido|pedido", "Nosso Site|https://exemplo.com"],
+  "footerText": "Escolha uma opção"
+}
+```
+
+**list example:**
+```json
+{
+  "number": "5511999999999",
+  "type": "list",
+  "text": "Catálogo de Produtos",
+  "choices": ["[Eletrônicos]", "Smartphones|phones|Últimos lançamentos", "Notebooks|notes|Modelos 2024"],
+  "listButton": "Ver Catálogo",
+  "footerText": "Preços sujeitos a alteração"
+}
+```
 
 ---
 

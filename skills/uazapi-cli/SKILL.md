@@ -81,21 +81,40 @@ uazapi send media --number 555193667706 --type image --file "https://example.com
 
 ### Location
 ```bash
-uazapi send location --number 555193667706 --latitude -23.5505 --longitude -46.6333 --name "São Paulo"
+uazapi send location --number 555193667706 --lat -23.5505 --lon -46.6333 --name "São Paulo"
 ```
 
 ### Interactive menu (buttons, list, poll)
+
+`choices` for **button** and **list** are arrays of strings — NOT objects.
+
 ```bash
-uazapi send menu --number 555193667706 --type button --text "Choose:" \
-  --choices '[{"id":"1","text":"Option A"},{"id":"2","text":"Option B"}]'
+# Button (no media)
+uazapi send menu --number 555193667706 --type button --text "How can we help?" \
+  --choices '["Tech Support|suporte","Place Order|pedido","Our Site|https://exemplo.com"]' \
+  --footer "Choose an option"
 
-uazapi send menu --number 555193667706 --type list --text "Select:" \
+# Button with image
+uazapi send menu --number 555193667706 --type button --text "Choose a product:" \
+  --choices '["Product A|prod_a","Product B|prod_b"]' \
+  --image-button "https://example.com/product.jpg"
+
+# List (sections use [Title] syntax)
+uazapi send menu --number 555193667706 --type list --text "Our catalog:" \
   --list-button "View options" \
-  --choices '[{"id":"1","text":"Item 1"},{"id":"2","text":"Item 2"}]'
+  --choices '["[Electronics]","Smartphones|phones|Latest releases","Notebooks|notes|2024 models","[Accessories]","Headphones|fones|Bluetooth & wired"]'
 
-uazapi send menu --number 555193667706 --type poll --text "Which?" \
-  --choices '["Option A","Option B","Option C"]'
+# Poll
+uazapi send menu --number 555193667706 --type poll --text "Which time do you prefer?" \
+  --choices '["Morning (8am-12pm)","Afternoon (1pm-5pm)","Evening (6pm-10pm)"]'
 ```
+
+**button choices formats:**
+- `"Label|id"` — reply button with custom ID
+- `"Label"` — reply button (ID equals label)
+- `"Label|copy:CODE"` — copy-to-clipboard button
+- `"Label|call:+5511999999999"` — call button
+- `"Label|https://example.com"` — URL button
 
 ### PIX payment button
 ```bash

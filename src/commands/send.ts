@@ -131,9 +131,11 @@ export function registerSendCommands(program: Command): void {
     .requiredOption("--number <number>", "Recipient number")
     .requiredOption("--type <type>", "button, list, poll, carousel")
     .requiredOption("--text <text>", "Main message text")
-    .requiredOption("--choices <json>", "Choices JSON array")
+    .requiredOption("--choices <json>", "Choices as JSON string array: [\"Label|id\", ...] for button/list, [\"Option\", ...] for poll")
     .option("--footer <text>", "Footer text")
-    .option("--list-button <text>", "List button text")
+    .option("--list-button <text>", "List button text (required for list type)")
+    .option("--image-button <url>", "Image URL or base64 for button type")
+    .option("--selectable-count <n>", "Max selectable options (poll only)", parseInt)
     .option("--reply-id <id>")
     .option("--delay <ms>", "", parseInt)
     .action(async (opts) => {
@@ -145,6 +147,8 @@ export function registerSendCommands(program: Command): void {
         choices: parseJsonArg(opts.choices),
         footerText: opts.footer,
         listButton: opts.listButton,
+        imageButton: opts.imageButton,
+        selectableCount: opts.selectableCount,
         replyid: opts.replyId,
         delay: opts.delay,
       });
