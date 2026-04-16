@@ -15,7 +15,7 @@ Eles até tem um arquivo yaml com instruções que podem ser usadas para instrui
 **uazapi-cli** encapsula toda a superficie da UAZAPI em um único binario com:
 
 - Um **menu interativo** para operacoes rapidas (testar conexao, enviar mensagem, listar instancias)
-- Uma **CLI completa** com subcomandos para scripts e automacao (`uazapi send text --to 5511... --message "ola"`)
+- Uma **CLI completa** com subcomandos para scripts e automacao (`uazapi send text --number 5511... --text "ola"`)
 - Um **wizard de configuracao** que salva a URL e o token da instancia uma unica vez
 - **Auto-atualizacao** embutida — rode `uazapi update` a qualquer momento
 
@@ -48,7 +48,7 @@ uazapi setup
 uazapi instance status
 
 # 4. Enviar sua primeira mensagem
-uazapi send text --to 5511999999999 --message "Ola do terminal!"
+uazapi send text --number 5511999999999 --text "Ola do terminal!"
 ```
 
 Ou rode `uazapi` sem argumentos para abrir o menu interativo.
@@ -118,16 +118,16 @@ uazapi [comando] [subcomando] [opcoes]
 uazapi instance status
 
 # Enviar mensagem de texto
-uazapi send text --to 5511999999999 --message "Ola!"
+uazapi send text --number 5511999999999 --text "Ola!"
 
 # Enviar imagem
-uazapi send media --to 5511999999999 --type image --file https://exemplo.com/foto.jpg
+uazapi send media --number 5511999999999 --type image --file https://exemplo.com/foto.jpg
 
 # Enviar botao de pagamento PIX
-uazapi send pix-button --to 5511999999999 --key "sua-chave-pix" --amount 49.90
+uazapi send pix-button --number 5511999999999 --pix-type PHONE --pix-key "5511999999999" --pix-name "Minha Loja"
 
 # Postar um Story no WhatsApp
-uazapi send status --type text --message "Novidade!"
+uazapi send status --type text --text "Novidade!"
 
 # Enviar botão interativo (sem mídia)
 # choices usa strings "Label|id" — não objetos {id, text}
