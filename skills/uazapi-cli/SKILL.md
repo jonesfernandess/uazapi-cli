@@ -149,6 +149,8 @@ uazapi message delete --id "554796187355:3EB07EB7F6267D2CE0DD3D"
 uazapi message react --number 555193667706 --id "554796187355:3EB07..." --text "👍"
 uazapi message edit --id "554796187355:3EB07..." --text "corrected text"
 uazapi message download --id "554796187355:3EB07..."
+uazapi message download --id "554796187355:3EB07..." --mp3   # explicit MP3 for web <audio> playback of voice notes
+# NOTE: the file content comes back in a `base64Data` field, not `base64`
 ```
 
 ## Groups
