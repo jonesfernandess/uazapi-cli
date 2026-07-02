@@ -38,7 +38,7 @@ export function registerMessageCommands(program: Command): void {
     .description("Download file from a message")
     .requiredOption("--id <id>", "Message ID")
     .option("--base64", "Return as base64")
-    .option("--mp3", "Convert audio to MP3 (required for playback in web <audio> players — raw ogg/opus voice notes don't decode in Safari/iOS)")
+    .option("--mp3", "Force audio conversion to MP3 (server already defaults to MP3; use this to be explicit or to override an account-level default). MP3 is required for playback in Safari/iOS <audio> — raw ogg/opus has no decoder there")
     .option("--link", "Return public URL")
     .option("--transcribe", "Transcribe audio")
     .option("--openai-key <key>", "OpenAI key for transcription")

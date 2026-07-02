@@ -253,7 +253,7 @@ POST /instance/create  →  POST /instance/connect  →  user scans QR  →  GET
 | Method | Endpoint | Body |
 |--------|----------|------|
 | POST | `/message/delete` | `{ id: str }` — full ID |
-| POST | `/message/download` | `{ id: str, return_base64?: bool, generate_mp3?: bool, return_link?: bool, transcribe?: bool, openai_apikey?: str }` |
+| POST | `/message/download` | `{ id: str, return_base64?: bool, generate_mp3?: bool, return_link?: bool, transcribe?: bool, openai_apikey?: str }` — response: `{ fileURL, mimetype, base64Data?, transcription? }`. **The base64 field is named `base64Data`, not `base64`** — a common integration bug is checking `response.base64` (always `undefined`) and treating every download as failed |
 | POST | `/message/edit` | `{ id: str, text: str }` |
 | POST | `/message/react` | `{ number: str, id: str, text: str }` — empty string removes reaction |
 | POST | `/message/markread` | `{ id: [str] }` — array of full IDs |
@@ -466,4 +466,5 @@ The `message` object uses `type` as the discriminator: `"text"`, `"image"`, `"vi
 - Before bulk campaigns: check `/instance/wa_messages_limits` — `provider_code: 463` = WhatsApp-level cap hit
 - `/sender/advanced` supports full campaign config (per-message delays, variables, scheduling) — run `uazapi search-docs "sender advanced" --pretty` for the complete spec
 - Audio transcription: `POST /message/download` with `transcribe: true` requires `openai_apikey`
-- Voice notes (`ptt`/`audio` messages) download as raw `ogg/opus` unless `generate_mp3: true` is set — Safari/iOS/WebKit have no opus decoder in `<audio>`, so a web player will show `0:00 / 0:00` and refuse to play. Always pass `generate_mp3: true` when the downloaded audio will be played back via an HTML `<audio>` element
+- `POST /message/download` returns the file content in a field named **`base64Data`**, not `base64`. Reading `response.base64` silently returns `undefined` on every call, which reads as "download always fails" — confirmed against a real production integration where this was the entire bug behind "can't play received audio"
+- Voice notes (`ptt`/`audio` messages): `generate_mp3` defaults to `true` server-side (mp3 out), but pass it explicitly if a caller elsewhere in your stack might flip it — raw `ogg/opus` has no decoder in Safari/iOS/WebKit `<audio>`, so a web player would show `0:00 / 0:00` and refuse to play
