@@ -466,3 +466,4 @@ The `message` object uses `type` as the discriminator: `"text"`, `"image"`, `"vi
 - Before bulk campaigns: check `/instance/wa_messages_limits` — `provider_code: 463` = WhatsApp-level cap hit
 - `/sender/advanced` supports full campaign config (per-message delays, variables, scheduling) — run `uazapi search-docs "sender advanced" --pretty` for the complete spec
 - Audio transcription: `POST /message/download` with `transcribe: true` requires `openai_apikey`
+- Voice notes (`ptt`/`audio` messages) download as raw `ogg/opus` unless `generate_mp3: true` is set — Safari/iOS/WebKit have no opus decoder in `<audio>`, so a web player will show `0:00 / 0:00` and refuse to play. Always pass `generate_mp3: true` when the downloaded audio will be played back via an HTML `<audio>` element
