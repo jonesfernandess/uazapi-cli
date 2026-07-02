@@ -194,6 +194,10 @@ uazapi webhook set --url "https://your-server.com/webhook" \
 uazapi webhook errors
 ```
 
+To test a local dev handler, point `--url` at a tunnel (`ngrok http 3000`, cloudflared, etc.) instead of localhost — Uazapi is a remote service and can't reach your machine directly. Only the webhook endpoint needs the tunnel; keep browsing/logging into your own app at `localhost` (auth callbacks, CSRF/origin checks, and cookies are usually scoped to `localhost` and will fail on the tunnel's domain). Remember to point `--url` back at production when done testing.
+
+See `uazapi-api`'s "Important Notes" for the real (flat, non-`{event,data}`) webhook payload shape and the `fromMe` sender-vs-chatid gotcha before writing a handler.
+
 ## Bulk Sending (Sender)
 
 ```bash
