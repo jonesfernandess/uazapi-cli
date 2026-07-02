@@ -346,19 +346,31 @@ Available events: `messages` · `connection` · `presence` · `group` · `chat` 
 | POST | `/globalwebhook` | `{ url, events[], enabled? }` **[admin]** |
 | GET | `/globalwebhook/errors` | **[admin]** |
 
-**Incoming webhook event payload:**
+**Incoming webhook event payload — confirmed against a real production integration** (this differs from the generic `{event, instance, data}` shape you might expect from the docs page — the actual delivery is flat):
 ```
 {
-  event: string,        // e.g. "messages"
-  instance: string,     // instance name
-  data: {
-    id: string,         // full message ID (owner:messageid)
-    from: string,       // sender chatid (number@s.whatsapp.net)
-    body: string,       // text content
-    type: string,       // message type
-    timestamp: int,
+  instanceName: string,   // instance name
+  token: string,           // this instance's own token, echoed back — use it to identify which instance/account the webhook belongs to when you run one shared endpoint for many instances
+  chat: {
+    phone?: string,
+    name?: string,        // chat/contact display name
+    wa_isGroup?: bool,
+    ...
+  },
+  message: {
+    messageid: string,     // (or `id`) — matches the id returned by the /send/* call for that message
+    chatid: string,        // number@s.whatsapp.net (or id@g.us for groups), or an @lid value — see gotcha below
+    sender: string,        // may be an @lid JID, not a phone number
+    sender_pn: string,     // dedicated phone-number field — prefer this over `sender`/`chatid` for the OTHER party, EXCEPT on fromMe (see below)
     fromMe: bool,
     isGroup: bool,
+    type: string,          // often generic "media" — real kind is in mediaType
+    mediaType?: string,    // ptt/audio/image/video/document/sticker
+    text?: string,
+    body?: string,
+    content?: string,
+    caption?: string,
+    timestamp: int,        // seconds or ms — check magnitude (>1e12 = ms)
     ...
   }
 }
@@ -468,3 +480,5 @@ The `message` object uses `type` as the discriminator: `"text"`, `"image"`, `"vi
 - Audio transcription: `POST /message/download` with `transcribe: true` requires `openai_apikey`
 - `POST /message/download` returns the file content in a field named **`base64Data`**, not `base64`. Reading `response.base64` silently returns `undefined` on every call, which reads as "download always fails" — confirmed against a real production integration where this was the entire bug behind "can't play received audio"
 - Voice notes (`ptt`/`audio` messages): `generate_mp3` defaults to `true` server-side (mp3 out), but pass it explicitly if a caller elsewhere in your stack might flip it — raw `ogg/opus` has no decoder in Safari/iOS/WebKit `<audio>`, so a web player would show `0:00 / 0:00` and refuse to play
+- **`fromMe` webhook events (message sent from the linked phone/app itself, not via the API): `sender`/`sender_pn` identify the WhatsApp account owner (whoever sent it), NOT the other party in the chat.** The conversation partner is only available via `message.chatid` / `chat.phone`. Resolving "who is this message with" using `sender_pn` (the normally-correct field for inbound messages) silently attaches every app-sent message to the account owner's own contact/conversation instead of the real recipient — confirmed against a real integration where messages sent from the phone app all landed in a "chat with myself" thread instead of the actual contact. When building any inbound-message handler: branch the phone/JID resolution on `fromMe` — use `chatid`/`chat.phone` when true, `sender_pn`/`sender` when false.
+- Webhooks fire for **both** directions: a message sent through your own API call to `/send/*` also arrives back through the webhook as a `fromMe: true` event (an echo), in addition to messages actually typed into the linked phone's WhatsApp app. If you already record the message when your code calls `/send/*`, dedupe the `fromMe` webhook echo against it — `message.messageid`/`message.id` matches the `id` your `/send/*` call got back in its response. There's no dedicated event field to tell "echo of my own API send" apart from "sent from the phone app"; both look identical (`fromMe: true`) and only the dedupe-by-id (or absence thereof) distinguishes them.
