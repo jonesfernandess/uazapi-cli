@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { execSync } from "child_process";
+import { fileURLToPath } from "url";
 import chalk from "chalk";
 
 import { registerInstanceCommands } from "./commands/instance.js";
@@ -27,8 +28,8 @@ const accent = chalk.hex("#0a4db1");
 const dim = chalk.dim;
 
 function getRepoDir(): string {
-  const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
-  if (dir.endsWith("/dist")) return dir.replace(/\/dist$/, "");
+  const dir = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]$/, "");
+  if (/[\\/]dist$/.test(dir)) return dir.replace(/[\\/]dist$/, "");
   return dir;
 }
 

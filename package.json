@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "postbuild": "chmod +x dist/cli.js",
+    "postbuild": "node -e \"if(process.platform!=='win32'){require('child_process').execSync('chmod +x dist/cli.js')}\"",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "lint": "tsc --noEmit"
