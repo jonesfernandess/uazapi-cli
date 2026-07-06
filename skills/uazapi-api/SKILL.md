@@ -268,11 +268,22 @@ POST /instance/create  →  POST /instance/connect  →  user scans QR  →  GET
 
 ### GET /group/list
 
-**Response:** `{ groups: [{ id: "...@g.us", name, subject, participants?: [...] }] }`
+**Response, confirmed against a real call:** `{ groups: [...] }`, where each
+entry has the **exact same rich shape as `/group/info`** (`JID`, `OwnerJID`/
+`OwnerPN`, `Name`, `Participants[]` with `JID`/`PhoneNumber`/`IsAdmin`/
+`IsSuperAdmin`, `AddressingMode`, `GroupCreated`, etc.) — not the sparse `{id,
+name, subject}` you might expect. `Participants[]` came back fully populated
+on a plain `GET /group/list` with no `getParticipants` flag at all, across
+every group on the instance (100+ groups checked). See `/group/info` below
+for the full field reference and the `OwnerJID`-is-a-LID gotcha, which
+applies here too since it's the same object shape.
 
 ### POST /group/list
 
-**Body:** `{ getParticipants: true }` — includes full participant list in response
+**Body:** `{ getParticipants: true }` — per the docs, includes full participant
+list in the response; in practice `Participants[]` was already present via
+plain `GET /group/list` in testing, so this flag's effect wasn't clearly
+observable — don't assume participants are absent without it.
 
 **Field casing gotcha, confirmed against the OpenAPI schema:** every `/group/*`
 and invite-code body below uses **lowercase `groupjid`/`invitecode`**, not the
@@ -353,10 +364,14 @@ up with `OwnerJID`/`OwnerPN` — you don't need to cross-reference
 `Participants[]` separately unless you need other creator metadata not on
 the top-level `Owner*` fields.
 
-**`OwnerPN` may not always be present.** WhatsApp's ongoing LID migration
-means a group's owner could have privacy settings that omit the PN field
-entirely, leaving only `OwnerJID`. Don't assume `OwnerPN` is always populated
-— handle its absence rather than crashing on it.
+**Both `OwnerJID` and `OwnerPN` can come back empty strings — confirmed at
+scale, not just theoretical.** A `GET /group/list` sweep across 100+ real
+groups on one instance showed roughly a third with `"OwnerJID": ""` and
+`"OwnerPN": ""` (seen on large/older groups and WhatsApp Communities in
+particular). `AddressingMode` was `"lid"` on every group checked, populated
+and empty alike, so it's not a usable signal for predicting which groups will
+have empty owner fields. Always handle the empty-string case — don't assume
+`OwnerPN` (or even `OwnerJID`) is populated just because the group has one.
 
 ---
 
