@@ -3,6 +3,7 @@ import chalk from "chalk";
 import figlet from "figlet";
 import gradient from "gradient-string";
 import { execSync } from "child_process";
+import { fileURLToPath } from "url";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import { homedir } from "os";
@@ -727,8 +728,8 @@ async function handleBulkSend(config: UazapiConfig): Promise<void> {
 // ── Update CLI ──
 
 function getRepoDir(): string {
-  const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
-  if (dir.endsWith("/dist")) return dir.replace(/\/dist$/, "");
+  const dir = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]$/, "");
+  if (/[\\/]dist$/.test(dir)) return dir.replace(/[\\/]dist$/, "");
   return dir;
 }
 
