@@ -24,7 +24,7 @@ export function registerGroupCommands(program: Command): void {
     .action(async (opts) => {
       const client = new UazapiClient();
       printResponse(
-        await client.post("/group/info", buildBody({ groupJid: opts.id, getParticipants: opts.participants })),
+        await client.post("/group/info", buildBody({ groupjid: opts.id, getParticipants: opts.participants })),
         "Group Info",
       );
     });
@@ -46,7 +46,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--code <code>", "Invite code or full link")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/join", { inviteCode: opts.code }), "Join Group");
+      printResponse(await client.post("/group/join", { invitecode: opts.code }), "Join Group");
     });
 
   cmd.command("leave")
@@ -54,7 +54,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--id <jid>")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/leave", { groupJid: opts.id }), "Leave Group");
+      printResponse(await client.post("/group/leave", { groupjid: opts.id }), "Leave Group");
     });
 
   cmd.command("invite-info")
@@ -62,7 +62,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--code <code>")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/inviteInfo", { inviteCode: opts.code }), "Invite Info");
+      printResponse(await client.post("/group/inviteInfo", { invitecode: opts.code }), "Invite Info");
     });
 
   cmd.command("reset-invite")
@@ -70,7 +70,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--id <jid>")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/resetInviteCode", { groupJid: opts.id }), "Reset Invite");
+      printResponse(await client.post("/group/resetInviteCode", { groupjid: opts.id }), "Reset Invite");
     });
 
   cmd.command("update-name")
@@ -78,7 +78,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--name <name>")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/updateName", { groupJid: opts.id, name: opts.name }), "Update Name");
+      printResponse(await client.post("/group/updateName", { groupjid: opts.id, name: opts.name }), "Update Name");
     });
 
   cmd.command("update-description")
@@ -87,7 +87,7 @@ export function registerGroupCommands(program: Command): void {
     .action(async (opts) => {
       const client = new UazapiClient();
       printResponse(
-        await client.post("/group/updateDescription", { groupJid: opts.id, description: opts.description }),
+        await client.post("/group/updateDescription", { groupjid: opts.id, description: opts.description }),
         "Update Description",
       );
     });
@@ -97,7 +97,7 @@ export function registerGroupCommands(program: Command): void {
     .requiredOption("--image <url>", "Image URL or base64")
     .action(async (opts) => {
       const client = new UazapiClient();
-      printResponse(await client.post("/group/updateImage", { groupJid: opts.id, image: opts.image }), "Update Image");
+      printResponse(await client.post("/group/updateImage", { groupjid: opts.id, image: opts.image }), "Update Image");
     });
 
   cmd.command("update-participants")
@@ -109,7 +109,7 @@ export function registerGroupCommands(program: Command): void {
       const client = new UazapiClient();
       printResponse(
         await client.post("/group/updateParticipants", {
-          groupJid: opts.id,
+          groupjid: opts.id,
           action: opts.action,
           participants: parseJsonArg(opts.participants),
         }),
@@ -123,7 +123,7 @@ export function registerGroupCommands(program: Command): void {
     .action(async (opts) => {
       const client = new UazapiClient();
       printResponse(
-        await client.post("/group/updateAnnounce", { groupJid: opts.id, announce: opts.value === "true" }),
+        await client.post("/group/updateAnnounce", { groupjid: opts.id, announce: opts.value === "true" }),
         "Update Announce",
       );
     });
@@ -134,7 +134,7 @@ export function registerGroupCommands(program: Command): void {
     .action(async (opts) => {
       const client = new UazapiClient();
       printResponse(
-        await client.post("/group/updateLocked", { groupJid: opts.id, locked: opts.value === "true" }),
+        await client.post("/group/updateLocked", { groupjid: opts.id, locked: opts.value === "true" }),
         "Update Locked",
       );
     });
