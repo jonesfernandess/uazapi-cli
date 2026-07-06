@@ -274,20 +274,89 @@ POST /instance/create  →  POST /instance/connect  →  user scans QR  →  GET
 
 **Body:** `{ getParticipants: true }` — includes full participant list in response
 
+**Field casing gotcha, confirmed against the OpenAPI schema:** every `/group/*`
+and invite-code body below uses **lowercase `groupjid`/`invitecode`**, not the
+`groupJid`/`inviteCode` camelCase you'd expect from the rest of the API's
+convention. Sending camelCase may silently work (the backend appears to be a
+Go service, and `encoding/json` unmarshals case-insensitively by default) or
+may not — don't rely on that; use the documented lowercase field.
+
 | Method | Endpoint | Body |
 |--------|----------|------|
-| POST | `/group/info` | `{ groupJid: str, getParticipants?: bool }` |
-| POST | `/group/create` | `{ name: str, participants: [str] }` — participants: digits only, no `@`; **Response:** `{ groupJid: str }` |
-| POST | `/group/join` | `{ inviteCode: str }` — code or full link |
-| POST | `/group/leave` | `{ groupJid: str }` |
-| POST | `/group/inviteInfo` | `{ inviteCode: str }` — group info without joining |
-| POST | `/group/resetInviteCode` | `{ groupJid: str }` |
-| POST | `/group/updateName` | `{ groupJid: str, name: str }` |
-| POST | `/group/updateDescription` | `{ groupJid: str, description: str }` |
-| POST | `/group/updateImage` | `{ groupJid: str, image: str }` — URL or base64 |
-| POST | `/group/updateParticipants` | `{ groupJid: str, action: "add" \| "remove" \| "promote" \| "demote", participants: [str] }` |
-| POST | `/group/updateAnnounce` | `{ groupJid: str, announce: bool }` — `true` = admins-only send |
-| POST | `/group/updateLocked` | `{ groupJid: str, locked: bool }` — `true` = admins-only edit info |
+| POST | `/group/info` | `{ groupjid: str, getParticipants?: bool, getInviteLink?: bool, getRequestsParticipants?: bool, force?: bool }` — see real response shape below |
+| POST | `/group/create` | `{ name: str, participants: [str] }` — participants: digits only, no `@`; **Response:** full group object (same shape as `/group/info`, i.e. `JID`, not `groupJid`) |
+| POST | `/group/join` | `{ invitecode: str }` — code or full link |
+| POST | `/group/leave` | `{ groupjid: str }` |
+| POST | `/group/inviteInfo` | `{ invitecode: str }` — group info without joining |
+| POST | `/group/resetInviteCode` | `{ groupjid: str }` |
+| POST | `/group/updateName` | `{ groupjid: str, name: str }` |
+| POST | `/group/updateDescription` | `{ groupjid: str, description: str }` |
+| POST | `/group/updateImage` | `{ groupjid: str, image: str }` — URL or base64 |
+| POST | `/group/updateParticipants` | `{ groupjid: str, action: "add" \| "remove" \| "promote" \| "demote", participants: [str] }` |
+| POST | `/group/updateAnnounce` | `{ groupjid: str, announce: bool }` — `true` = admins-only send |
+| POST | `/group/updateLocked` | `{ groupjid: str, locked: bool }` — `true` = admins-only edit info |
+
+### `/group/info` response — confirmed against a real production call
+
+The official OpenAPI example only shows `JID`, `Name`, `Participants[].JID`,
+`IsAdmin`, `IsLocked`, `IsAnnounce` — the real response is far richer:
+
+```jsonc
+{
+  "JID": "120363426711119080@g.us",
+  "OwnerJID": "98999147212892@lid",     // LID — NOT a phone number, see gotcha below
+  "OwnerPN": "555193667706@s.whatsapp.net", // the actual dialable phone of whoever created the group
+  "Name": "Cadu Testes",
+  "NameSetAt": "2026-07-06T16:01:10Z",
+  "NameSetBy": "98999147212892@lid",
+  "NameSetByPN": "555193667706@s.whatsapp.net",
+  "GroupCreated": "2026-07-06T16:01:10Z",
+  "CreatorCountryCode": "BR",
+  "ParticipantVersionID": "1783353670953326",
+  "Participants": [
+    {
+      "JID": "98999147212892@lid",           // LID, not dialable
+      "PhoneNumber": "555193667706@s.whatsapp.net", // real phone
+      "LID": "98999147212892@lid",
+      "IsAdmin": true,
+      "IsSuperAdmin": true,                  // the group creator has IsSuperAdmin: true
+      "DisplayName": "",
+      "Error": 0,
+      "AddRequest": null
+    }
+  ],
+  "ParticipantCount": 2,
+  "IsLocked": false,
+  "IsAnnounce": false,
+  "MemberAddMode": "all_member_add",
+  "Suspended": false,
+  "OwnerCanSendMessage": true
+}
+```
+
+**Gotcha — `OwnerJID` is a LID, not a phone number.** Same JID(LID)-vs-PN
+duality as `message.sender`/`message.sender_pn` (see Webhook section below),
+now confirmed on the group object too: `OwnerJID` / `Participants[].JID` are
+LIDs (`@lid`, not dialable, not usable to look up a user by phone), while
+`OwnerPN` / `Participants[].PhoneNumber` carry the real `@s.whatsapp.net`
+phone. Using `OwnerJID` where you need a phone number (to search your own
+user DB, or to send that person a DM) fails — confirmed against a real
+integration where this caused a Supabase user lookup to miss, and a
+follow-up DM to error with `"the number ...@s.whatsapp.net is not on
+WhatsApp"` because the "number" was actually a LID. **Always prefer the
+`*PN` field when you need a phone number; only use the LID for identity
+comparisons within the same payload (e.g. matching `Participants[].JID`
+against `OwnerJID`).**
+
+The group creator is the participant with `"IsSuperAdmin": true`, which lines
+up with `OwnerJID`/`OwnerPN` — you don't need to cross-reference
+`Participants[]` separately unless you need other creator metadata not on
+the top-level `Owner*` fields.
+
+**`OwnerPN` may not always be present.** WhatsApp's ongoing LID migration
+means a group's owner could have privacy settings that omit the PN field
+entirely, leaving only `OwnerJID`. Don't assume `OwnerPN` is always populated
+— handle its absence rather than crashing on it.
 
 ---
 
@@ -349,12 +418,16 @@ Available events: `messages` · `connection` · `presence` · `group` · `chat` 
 **Incoming webhook event payload — confirmed against a real production integration** (this differs from the generic `{event, instance, data}` shape you might expect from the docs page — the actual delivery is flat):
 ```
 {
+  owner: string,           // ⚠️ the INSTANCE's own number (e.g. "554796187355") — NOT a resource/group owner, see gotcha below
   instanceName: string,   // instance name
   token: string,           // this instance's own token, echoed back — use it to identify which instance/account the webhook belongs to when you run one shared endpoint for many instances
   chat: {
     phone?: string,
     name?: string,        // chat/contact display name
+    owner: string,        // same instance-number field as above, repeated here
     wa_isGroup?: bool,
+    wa_isGroup_admin?: bool,  // whether the INSTANCE (this bot) is an admin of the group — not about the human creator
+    wa_isGroup_member?: bool,
     ...
   },
   message: {
@@ -362,6 +435,7 @@ Available events: `messages` · `connection` · `presence` · `group` · `chat` 
     chatid: string,        // number@s.whatsapp.net (or id@g.us for groups), or an @lid value — see gotcha below
     sender: string,        // may be an @lid JID, not a phone number
     sender_pn: string,     // dedicated phone-number field — prefer this over `sender`/`chatid` for the OTHER party, EXCEPT on fromMe (see below)
+    owner: string,         // same instance-number field again
     fromMe: bool,
     isGroup: bool,
     type: string,          // often generic "media" — real kind is in mediaType
@@ -375,6 +449,19 @@ Available events: `messages` · `connection` · `presence` · `group` · `chat` 
   }
 }
 ```
+
+**Gotcha — the top-level, `chat.owner`, and `message.owner` fields are all the
+same thing: the WhatsApp instance/account's own number**, confirmed identical
+across every payload in a real production log (individual messages, group
+messages, and the webhook root) — never the creator/admin of a group or chat.
+This is the same "owner" as in the `{owner}:{messageid}` message ID format
+(see ID Formats above) — it consistently means "which instance this belongs
+to", useful for routing when one webhook endpoint serves multiple instances,
+but a trap if you mistake it for "who owns this group" (see `/group/info`'s
+real `OwnerJID`/`OwnerPN` fields in the Groups section for that). Confirmed
+against a real integration where a group-ownership feature initially read
+this `owner` field and always resolved to the bot's own account instead of
+the group creator.
 
 ---
 
@@ -482,3 +569,5 @@ The `message` object uses `type` as the discriminator: `"text"`, `"image"`, `"vi
 - Voice notes (`ptt`/`audio` messages): `generate_mp3` defaults to `true` server-side (mp3 out), but pass it explicitly if a caller elsewhere in your stack might flip it — raw `ogg/opus` has no decoder in Safari/iOS/WebKit `<audio>`, so a web player would show `0:00 / 0:00` and refuse to play
 - **`fromMe` webhook events (message sent from the linked phone/app itself, not via the API): `sender`/`sender_pn` identify the WhatsApp account owner (whoever sent it), NOT the other party in the chat.** The conversation partner is only available via `message.chatid` / `chat.phone`. Resolving "who is this message with" using `sender_pn` (the normally-correct field for inbound messages) silently attaches every app-sent message to the account owner's own contact/conversation instead of the real recipient — confirmed against a real integration where messages sent from the phone app all landed in a "chat with myself" thread instead of the actual contact. When building any inbound-message handler: branch the phone/JID resolution on `fromMe` — use `chatid`/`chat.phone` when true, `sender_pn`/`sender` when false.
 - Webhooks fire for **both** directions: a message sent through your own API call to `/send/*` also arrives back through the webhook as a `fromMe: true` event (an echo), in addition to messages actually typed into the linked phone's WhatsApp app. If you already record the message when your code calls `/send/*`, dedupe the `fromMe` webhook echo against it — `message.messageid`/`message.id` matches the `id` your `/send/*` call got back in its response. There's no dedicated event field to tell "echo of my own API send" apart from "sent from the phone app"; both look identical (`fromMe: true`) and only the dedupe-by-id (or absence thereof) distinguishes them.
+- **The JID(LID)-vs-PN field duality is systemic across the whole API, not just messages.** Confirmed on both the messages webhook (`sender`/`sender_pn`) and `/group/info` (`OwnerJID`/`OwnerPN`, `Participants[].JID`/`PhoneNumber`) — WhatsApp's LID privacy rollout means any field literally named `JID` (or ending in `JID` without a `PN` counterpart) may be a non-dialable LID (`...@lid`), not a phone number. Whenever you need an actual phone number — to look up a user in your own DB, to call `/chat/check`, or to send a DM — use the sibling field ending in `PN`/`PhoneNumber`, never the raw `JID`. Assume any new endpoint returning identity info follows the same pattern until proven otherwise.
+- **`/group/*` and invite-code request bodies use lowercase `groupjid`/`invitecode`**, not the `groupJid`/`inviteCode` casing you'd guess from the rest of the API (confirmed against the OpenAPI schema for every group/invite endpoint). The backend looks like a Go service and case-insensitive JSON unmarshaling may paper over the mismatch, but don't rely on that — use the documented lowercase key.

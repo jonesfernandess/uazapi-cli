@@ -157,14 +157,25 @@ uazapi message download --id "554796187355:3EB07..." --mp3   # explicit MP3 for 
 
 ```bash
 uazapi group list
-uazapi group create --name "Team" --participants "555193667706,5511999999999"
-uazapi group info --group-jid "120363425061733477@g.us"
-uazapi group join --invite-code "AbCdEfGhIjKl"
-uazapi group leave --group-jid "120363425061733477@g.us"
-uazapi group update-name --group-jid "120363425061733477@g.us" --name "New Name"
-uazapi group update-participants --group-jid "120363425061733477@g.us" \
-  --action add --participants "555193667706"
+uazapi group create --name "Team" --participants '["555193667706","5511999999999"]'
+uazapi group info --id "120363425061733477@g.us"
+uazapi group join --code "AbCdEfGhIjKl"
+uazapi group leave --id "120363425061733477@g.us"
+uazapi group update-name --id "120363425061733477@g.us" --name "New Name"
+uazapi group update-participants --id "120363425061733477@g.us" \
+  --action add --participants '["555193667706"]'
 ```
+
+`--participants` takes a JSON array (quoted numbers), not a bare comma-separated
+string — `parseJsonArg` runs `JSON.parse` on it, so `--participants
+"555193667706,5511999999999"` fails to parse. Group/invite flags are `--id`
+(not `--group-jid`) and `--code` (not `--invite-code`) — see `group --help` or
+`src/commands/group.ts` for the full flag list per subcommand.
+
+`group info` calls `/group/info` under the hood — see `uazapi-api`'s Groups
+section for the real response shape (`OwnerJID` is a LID, not a phone; use
+`OwnerPN` for the group creator's actual number) and the `groupjid`/`invitecode`
+lowercase body-field gotcha.
 
 ## Chats
 
