@@ -484,25 +484,29 @@ against a real integration where a group-ownership feature initially read
 this `owner` field and always resolved to the bot's own account instead of
 the group creator.
 
-**Button/list quick-reply tap — confirmed against a real payload** (sent a
-real `/send/menu` `type: "button"` message cross-account via two live
-instances and tapped a button on the receiving phone, then read the
-resulting message back via `POST /message/find` — the same normalized shape
-the webhook delivers). This is WhatsApp's modern "native flow" quick-reply
-button (what `/send/menu` actually sends — see its section above), not the
-legacy Baileys `buttonsResponseMessage`/`templateButtonReplyMessage` proto
-shapes you'd expect from the underlying library:
+**Button/list quick-reply tap — confirmed against real payloads for BOTH
+kinds** (sent real `/send/menu` `type: "button"` AND `type: "list"` messages
+cross-account via two live instances and tapped a button / picked a list row
+on the receiving phone, then read each resulting message back via
+`POST /message/find` — the same normalized shape the webhook delivers). A
+button tap is WhatsApp's modern "native flow" quick-reply button (what
+`/send/menu` actually sends — see its section above), not the legacy Baileys
+`buttonsResponseMessage`/`templateButtonReplyMessage` proto shapes you'd
+expect from the underlying library. Both message kinds normalize onto the
+exact same pair of fields:
 
 ```
 message: {
-  messageType: "ButtonsResponseMessage",  // lower-cases to "buttonsresponsemessage"; `message.type` in the webhook is expected to carry the same value
-  buttonOrListid: string,   // the tapped choice's id (e.g. "btn_confirm") — flat top-level field, NOT nested under a `buttonsResponseMessage`/`templateButtonReplyMessage` object
-  vote: string,             // the tapped choice's DISPLAY TEXT (e.g. "I will be there") — yes, the field is named `vote`; Uazapi reuses it for poll votes too
+  messageType: "ButtonsResponseMessage",  // or "ListResponseMessage" for a list-row tap — both lower-case to "buttonsresponsemessage"/"listresponsemessage"; `message.type` in the webhook is expected to carry the same value
+  buttonOrListid: string,   // the tapped choice's id (e.g. "btn_confirm" or "opt_a") — flat top-level field, identical for both button and list taps, NOT nested under a `buttonsResponseMessage`/`templateButtonReplyMessage` object
+  vote: string,             // the tapped choice's DISPLAY TEXT (e.g. "I will be there" or "Option A") — yes, the field is named `vote`; Uazapi reuses it for poll votes too
   text: "",                 // empty string, not null/absent, on this message kind — don't treat "" as "no text" without checking `buttonOrListid`/`vote` first
-  quoted: string,           // the ORIGINAL (button) message's bare `messageid` — e.g. "3EB0630995FA3F08C04B4B" — NOT the composite `{owner}:{messageid}` form used for message IDs everywhere else (see ID Formats above)
+  quoted: string,           // the ORIGINAL (button/list) message's bare `messageid` — e.g. "3EB0630995FA3F08C04B4B" — NOT the composite `{owner}:{messageid}` form used for message IDs everywhere else (see ID Formats above)
   content: {
-    selectedButtonID: string,       // duplicates buttonOrListid
-    Response: { SelectedDisplayText: string },  // duplicates vote
+    selectedButtonID: string,       // duplicates buttonOrListid (button taps)
+    Response: { SelectedDisplayText: string },  // duplicates vote (button taps)
+    singleSelectReply: { selectedRowID: string },  // duplicates buttonOrListid (list taps)
+    title: string,                  // duplicates vote (list taps)
     contextInfo: { stanzaID: string, ... },     // duplicates `quoted`, same bare-id caveat
   },
   ...
@@ -520,10 +524,6 @@ reconstruct it yourself: `` `${message.owner}:${message.quoted}` ``.
 Confirmed missing this reconstruction step causes "find quoted message"
 lookups to silently return nothing on every reply, even though the parent
 message is in fact on file.
-
-An inbound `/send/menu` `type: "list"` row tap is presumed to normalize the
-same way (`buttonOrListid`/`vote`), but that's not yet confirmed against a
-live payload — only the button case above has been captured.
 
 ---
 
