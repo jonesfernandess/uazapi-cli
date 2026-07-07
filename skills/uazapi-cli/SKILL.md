@@ -207,6 +207,10 @@ uazapi webhook errors
 
 To test a local dev handler, point `--url` at a tunnel (`ngrok http 3000`, cloudflared, etc.) instead of localhost — Uazapi is a remote service and can't reach your machine directly. Only the webhook endpoint needs the tunnel; keep browsing/logging into your own app at `localhost` (auth callbacks, CSRF/origin checks, and cookies are usually scoped to `localhost` and will fail on the tunnel's domain). Remember to point `--url` back at production when done testing.
 
+If you don't have a second recipient handy to test how a button/list tap arrives on your webhook: two of your own instances can message each other — `UAZAPI_TOKEN=<other-instance-token> uazapi send menu --number <first-instance-owner-number> ...` sends across accounts using the CLI's normal config for the recipient's number, then `uazapi message find --chat-id "<owner>@s.whatsapp.net"` (on whichever instance received the tap) reads back the normalized reply payload without needing the webhook delivery itself. Tapping a button in a "Message Yourself" self-chat does NOT produce a reply — confirmed no message arrives back at all in that case; you need two distinct instances/numbers.
+
+See `uazapi-api`'s "Button/list quick-reply tap" note (under Webhook) for the confirmed inbound payload shape (`buttonOrListid`/`vote`, and the bare-vs-composite `quoted` id gotcha) before writing a handler for it.
+
 See `uazapi-api`'s "Important Notes" for the real (flat, non-`{event,data}`) webhook payload shape and the `fromMe` sender-vs-chatid gotcha before writing a handler.
 
 ## Bulk Sending (Sender)
